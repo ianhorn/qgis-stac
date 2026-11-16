@@ -1,0 +1,14 @@
+__pycache__/
+*.pyc
+.venv/
+.ruff_cache/
+.pytest_cache/
+dist/
+*.zip
+kentucky_stac/ext_libs/
+.claude/settings.local.json
+
+# local test-download folder (real point cloud/imagery downloads, not project files)
+data*
+data/
+data/*

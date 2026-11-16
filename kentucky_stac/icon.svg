@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <!-- Drop shadows are stacked offset copies rather than an SVG blur filter, which QtSvg doesn't render reliably. -->
+  <g fill="#000000">
+    <rect x="5" y="5.5" width="56" height="56" rx="11" opacity="0.10"/>
+    <rect x="4" y="4.5" width="56" height="56" rx="11" opacity="0.14"/>
+    <rect x="3" y="3.5" width="56" height="56" rx="11" opacity="0.18"/>
+  </g>
+  <rect x="2" y="2" width="56" height="56" rx="11" fill="#336699"/>
+  <g fill="none" stroke="#000000" stroke-linecap="round" stroke-linejoin="round">
+    <g transform="translate(2.4 3)" stroke-width="6" opacity="0.12">
+      <path d="M13 14 V42 M29 14 L13 30 M19 26 L30 42"/>
+      <path d="M34 24 L41.5 40 M49 24 L39 48"/>
+    </g>
+    <g transform="translate(1.6 2)" stroke-width="5.4" opacity="0.28">
+      <path d="M13 14 V42 M29 14 L13 30 M19 26 L30 42"/>
+      <path d="M34 24 L41.5 40 M49 24 L39 48"/>
+    </g>
+  </g>
+  <g fill="none" stroke="#FFFFFF" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+    <!-- K -->
+    <path d="M13 14 V42 M29 14 L13 30 M19 26 L30 42"/>
+    <!-- y -->
+    <path d="M34 24 L41.5 40 M49 24 L39 48"/>
+  </g>
+</svg>

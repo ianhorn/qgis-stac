@@ -1,0 +1,231 @@
+"""Background tasks, so network calls never block the QGIS UI."""
+
+from __future__ import annotations
+
+import json
+import re
+from dataclasses import replace
+from typing import Callable, List, Optional, Sequence, Tuple
+
+from qgis.core import QgsTask
+
+from . import auth
+from .diagnostics import log_exception
+from .qgis_transport import qgis_transport, transport_for
+from .sources import STAC_INDEX_URL, ApiSource, CatalogEntry, parse_stac_index
+from .stac import Collection, Item, SearchQuery, StacClient, StacError, query_variants, within_cloud
+
+
+def _with_hint(client: StacClient, message: str) -> str:
+    """The error, plus -- when the address turns out to be a catalog of catalogs -- the catalogs to use instead."""
+    try:
+        children = client.child_catalogs()
+    except (StacError, ValueError, TypeError, AttributeError):  # only a hint; the original message stands
+        return message
+    if not children:
+        return message
+    message = re.sub(r" \(this source may need a login[^)]*\)", "", message)  # the real cause is the address
+    listed = "; ".join(f"{title}: {href}" for title, href in children[:4])
+    more = f" (and {len(children) - 4} more)" if len(children) > 4 else ""
+    return (
+        f"{message} -- this address is a catalog of catalogs, not a STAC API with collections of its own. "
+        f"Add one of its catalogs as a source instead, for example {listed}{more}"
+    )
+
+
+class CollectionsTask(QgsTask):
+    """Fetch every source's collections, each independently: one unreachable "bring your own" API
+    doesn't stop the built-in catalog (or any other source) from loading. Each collection is tagged
+    with its source's base URL. `callback(collections, errors)` runs on the main thread unless the
+    task was cancelled; errors is a list of (source name, message)."""
+
+    def __init__(self, sources: Sequence[ApiSource], callback: Callable[[List[Collection], List[Tuple[str, str]]], None]):
+        super().__init__("Loading Kentucky STAC collections")
+        self._sources = list(sources)
+        self._callback = callback
+        self.collections: List[Collection] = []
+        self.errors: List[Tuple[str, str]] = []
+
+    def run(self) -> bool:
+        # Worker thread: no GUI access here.
+        for source in self._sources:
+            if self.isCanceled():
+                return False
+            try:
+                client = StacClient(source.base_uri, transport_for(auth.cfg_for_source(source.base_uri)))
+                found = client.collections()
+                self.collections.extend(replace(c, source=source.base_uri) for c in found)
+                if getattr(client, "partial_error", None):
+                    self.errors.append(
+                        (source.name, f"only the first {len(found)} collections loaded: {client.partial_error}")
+                    )
+            except Exception as e:  # noqa: BLE001 - a worker thread must not let an exception escape
+                log_exception(f"Could not load the collections of {source.name}")
+                self.errors.append((source.name, _with_hint(client, str(e))))
+        return True
+
+    def finished(self, result: bool) -> None:
+        if self.isCanceled():
+            return
+        self._callback(self.collections, self.errors)
+
+
+MAX_RESULTS = 2000
+PAGE_SIZE = 500
+# A server that doesn't implement a requested filter/sort extension answers with one of these.
+_UNSUPPORTED = (400, 422, 501)
+# ...and one of these means the response itself was too big or the server gave up on it.
+_TOO_BIG = (413, 500, 502, 503, 504)
+_MIN_PAGE_SIZE = 25
+
+
+class SearchTask(QgsTask):
+    """Run a STAC search against one or more sources, following pagination up to MAX_RESULTS items
+    per source, and merge the results (each item tagged with its source's base URL).
+
+    `groups` is a list of (source base URL, collection ids to search there); `query` supplies the
+    rest (geometry, limit). A source that fails is reported in `errors` rather than failing the
+    whole search, unless every source failed.
+    `callback(items, matched, truncated, error)` runs on the main thread unless cancelled."""
+
+    def __init__(
+        self,
+        groups: Sequence[Tuple[str, List[str]]],
+        query: SearchQuery,
+        callback,
+        source_names=None,
+        max_results: int = MAX_RESULTS,
+    ):
+        super().__init__("Searching Kentucky STAC")
+        self._groups = list(groups)
+        self._query = query
+        self._callback = callback
+        self._names = source_names or {}
+        self._max_results = max_results
+        self.notes: List[str] = []  # things the user should know about how a source handled the filters
+        self.items: List[Item] = []
+        self.matched: Optional[int] = None
+        self.truncated = False
+        self.errors: List[Tuple[str, str]] = []
+
+    def run(self) -> bool:
+        # Worker thread: no GUI access here.
+        total_matched = 0
+        any_matched = False
+        for base_uri, collection_ids in self._groups:
+            if self.isCanceled():
+                return False
+            try:
+                items, matched, truncated = self._search_one(base_uri, collection_ids)
+            except Exception as e:  # noqa: BLE001 - a worker thread must not let an exception escape
+                log_exception("A search failed")
+                self.errors.append((self._names.get(base_uri, base_uri), str(e)))
+                continue
+            if self.isCanceled():
+                return False
+            self.items.extend(replace(i, source=base_uri) for i in items)
+            self.truncated = self.truncated or truncated
+            if matched is not None:
+                total_matched += matched
+                any_matched = True
+        self.matched = total_matched if any_matched else None
+        return True
+
+    def _first_page(self, client: StacClient, base: SearchQuery):
+        """The first page for `base`, trying simpler forms of the query until the server takes one:
+        returns (page, the query that worked). A cloud filter the server ignores outright (its results
+        still hold too-cloudy tiles) counts as not taken."""
+        first_error: Optional[StacError] = None
+        variants = query_variants(base)
+        for index, query in enumerate(variants):
+            try:
+                page = client.search(query)
+            except StacError as e:
+                first_error = first_error or e
+                if e.status not in _UNSUPPORTED:
+                    raise
+                continue
+            if query.max_cloud_cover is not None and not all(within_cloud(i, query.max_cloud_cover) for i in page.features):
+                first_error = first_error or StacError("the server ignored the cloud-cover filter")
+                if index < len(variants) - 1:
+                    continue  # (on the last form the results are accepted and filtered here instead)
+            return page, query
+        raise first_error
+
+    def _search_one(self, base_uri: str, collection_ids: List[str]) -> Tuple[List[Item], Optional[int], bool]:
+        base = replace(self._query, collections=list(collection_ids))
+        client = StacClient(base_uri, transport_for(auth.cfg_for_source(base_uri)))
+        name = self._names.get(base_uri, base_uri)
+        # A big page can overflow a server's response limit (Earth Search answers 502 for 500 Sentinel-2
+        # items), so on a server error the page size is halved and the search tried again.
+        limit = base.limit
+        while True:
+            try:
+                page, query = self._first_page(client, replace(base, limit=limit))
+                break
+            except StacError as e:
+                if e.status in _TOO_BIG and limit > _MIN_PAGE_SIZE and not self.isCanceled():
+                    limit = max(_MIN_PAGE_SIZE, limit // 2)
+                    continue
+                raise
+        if base.max_cloud_cover is not None and query.cloud_mode != base.cloud_mode:
+            self.notes.append(
+                f"{name} doesn't support CQL2 filters, so the cloud filter also hides tiles that don't report cloud cover"
+            )
+        if base.sortby and not query.sortby:
+            self.notes.append(f"{name} can't sort, so its results were sorted here (the newest may be cut off by the limit)")
+        matched = page.number_matched
+        items = list(page.features)
+        truncated = False
+        # Stop on an empty page or once numberMatched is reached, too: some servers (stac-server)
+        # still offer a next link on the last page.
+        while page.next_link is not None and page.features:
+            if self.isCanceled() or (matched is not None and len(items) >= matched):
+                break
+            if len(items) >= self._max_results:
+                truncated = True
+                break
+            page = client.next_page(page, query)
+            if page is None:
+                break
+            items.extend(page.features)
+        items = [i for i in items if within_cloud(i, base.max_cloud_cover)]
+        return items, matched, truncated
+
+    @property
+    def error(self) -> Optional[str]:
+        """A fatal error: only when every source failed. Partial failures are in `errors`."""
+        if self.errors and len(self.errors) == len(self._groups):
+            return "; ".join(f"{name}: {msg}" for name, msg in self.errors)
+        return None
+
+    def finished(self, result: bool) -> None:
+        if self.isCanceled():
+            return
+        self._callback(self.items[: self._max_results] if self.truncated else self.items, self.matched, self.truncated, self.error)
+
+
+class StacIndexTask(QgsTask):
+    """Fetch the list of public, searchable STAC APIs from STAC Index.
+    `callback(entries, error)` runs on the main thread unless cancelled."""
+
+    def __init__(self, callback: Callable[[List[CatalogEntry], Optional[str]], None]):
+        super().__init__("Loading STAC Index catalogs")
+        self._callback = callback
+        self.entries: List[CatalogEntry] = []
+        self.error: Optional[str] = None
+
+    def run(self) -> bool:
+        try:
+            raw = qgis_transport("GET", STAC_INDEX_URL, None, {"Accept": "application/json"})
+            self.entries = parse_stac_index(json.loads(raw))
+            return True
+        except Exception as e:  # noqa: BLE001 - a worker thread must not let an exception escape
+            log_exception("Could not load the STAC Index")
+            self.error = str(e)
+            return False
+
+    def finished(self, result: bool) -> None:
+        if self.isCanceled():
+            return
+        self._callback(self.entries, self.error)

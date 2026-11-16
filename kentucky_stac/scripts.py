@@ -1,0 +1,254 @@
+"""Export the selected tiles as a script that downloads them outside QGIS: a Python script, a Jupyter
+notebook, an R script or a shell script. Each is self-contained (Python and R: standard library / base R only; shell: bash + curl),
+turns s3:// addresses into https, and fetches a free Planetary Computer SAS token for an Azure blob file
+when it runs, since such a token expires within the hour and so can't be baked into the script.
+
+Pure Python -- no QGIS import -- so it's unit-testable.
+"""
+
+from __future__ import annotations
+
+import json
+from datetime import datetime
+from typing import Iterable, List, Tuple
+
+from . import s3
+
+Entry = Tuple[str, str]  # (file name, url)
+
+KINDS = {  # kind -> (menu label, file extension, file dialog filter)
+    "notebook": ("Jupyter notebook (.ipynb)", ".ipynb", "Jupyter notebook (*.ipynb)"),
+    "python": ("Python script (.py)", ".py", "Python script (*.py)"),
+    "r": ("R script (.R)", ".R", "R script (*.R)"),
+    "shell": ("Shell script (.sh)", ".sh", "Shell script (*.sh)"),
+}
+
+_PY_CONFIG = '''import concurrent.futures
+import json
+import os
+import shutil
+import urllib.parse
+import urllib.request
+
+# Where the files go, and how many download at once.
+DEST = "tiles"
+WORKERS = 4
+'''
+
+_PY_TILES = '''# (file name, url) of each tile.
+TILES = @ENTRIES@
+'''
+
+_PY_HELPERS = '''_tokens = {}
+
+
+def sign(url):
+    """An Azure blob URL (Microsoft Planetary Computer) needs a free SAS token; anything else is as-is."""
+    parts = urllib.parse.urlparse(url)
+    host = parts.netloc.lower()
+    if not host.endswith(".blob.core.windows.net") or "sig=" in parts.query:
+        return url
+    account = host.split(".")[0]
+    container = parts.path.lstrip("/").split("/")[0]
+    if (account, container) not in _tokens:
+        api = f"https://planetarycomputer.microsoft.com/api/sas/v1/token/{account}/{container}"
+        with urllib.request.urlopen(api) as response:
+            _tokens[(account, container)] = json.load(response)["token"]
+    return url + ("&" if parts.query else "?") + _tokens[(account, container)]
+
+
+def fetch(tile):
+    name, url = tile
+    path = os.path.join(DEST, name)
+    if os.path.exists(path):
+        return name, "already there"
+    part = path + ".part"
+    request = urllib.request.Request(sign(url), headers={"User-Agent": "kentucky-stac-export"})
+    with urllib.request.urlopen(request) as response, open(part, "wb") as out:
+        shutil.copyfileobj(response, out, 1 << 20)
+    os.replace(part, path)
+    return name, "downloaded"
+'''
+
+_PY_RUN = '''def download_all():
+    os.makedirs(DEST, exist_ok=True)
+    with concurrent.futures.ThreadPoolExecutor(WORKERS) as pool:
+        futures = {pool.submit(fetch, tile): tile[0] for tile in TILES}
+        for future in concurrent.futures.as_completed(futures):
+            try:
+                print(*future.result())
+            except Exception as error:
+                print(futures[future], "FAILED:", error)
+'''
+
+
+def _entries_literal(entries: List[Entry]) -> str:
+    rows = "".join(f"    ({json.dumps(name)}, {json.dumps(url)}),\n" for name, url in entries)
+    return f"[\n{rows}]"
+
+
+def entries_for(pairs: Iterable[Entry]) -> List[Entry]:
+    """(name, url) pairs with s3:// urls turned into their https address, duplicate names dropped."""
+    seen, out = set(), []
+    for name, url in pairs:
+        if name not in seen:
+            seen.add(name)
+            out.append((name, s3.to_https(url)))
+    return out
+
+
+def _header(entries: List[Entry]) -> str:
+    return f"Downloads {len(entries)} tile{'s' if len(entries) != 1 else ''} chosen in the Kentucky STAC QGIS plugin ({datetime.now():%Y-%m-%d})."
+
+
+def python_script(entries: List[Entry]) -> str:
+    return (
+        f'"""{_header(entries)}\n\nStandard library only. A file that is not public (e.g. a private S3 bucket) needs its own '
+        'credentials,\nwhich this script does not handle."""\n\n'
+        + _PY_CONFIG
+        + "\n"
+        + _PY_TILES.replace("@ENTRIES@", _entries_literal(entries))
+        + "\n\n"
+        + _PY_HELPERS
+        + "\n\n"
+        + _PY_RUN
+        + '\n\nif __name__ == "__main__":\n    download_all()\n'
+    )
+
+
+def notebook(entries: List[Entry]) -> str:
+    def cell(kind: str, text: str) -> dict:
+        lines = text.rstrip("\n").splitlines(keepends=True)
+        base = {"cell_type": kind, "metadata": {}, "source": lines}
+        return base if kind == "markdown" else {**base, "execution_count": None, "outputs": []}
+
+    cells = [
+        cell("markdown", f"# Kentucky STAC tiles\n\n{_header(entries)} Run the cells in order; standard library only."),
+        cell("code", _PY_CONFIG),
+        cell("code", _PY_TILES.replace("@ENTRIES@", _entries_literal(entries))),
+        cell("code", _PY_HELPERS),
+        cell("code", _PY_RUN + "\n\ndownload_all()"),
+    ]
+    nb = {
+        "cells": cells,
+        "metadata": {"kernelspec": {"display_name": "Python 3", "language": "python", "name": "python3"}},
+        "nbformat": 4,
+        "nbformat_minor": 5,
+    }
+    for i, c in enumerate(cells):
+        c["id"] = f"cell{i}"
+    return json.dumps(nb, indent=1) + "\n"
+
+
+_SH = r'''#!/usr/bin/env bash
+# @HEADER@
+# Needs bash and curl. Usage: ./script.sh [destination folder]   (JOBS=8 ./script.sh for more at once)
+# A file that is not public (e.g. a private S3 bucket) needs its own credentials, which this does not handle.
+set -u
+export DEST="${1:-tiles}"
+JOBS="${JOBS:-4}"
+mkdir -p "$DEST"
+
+# An Azure blob URL (Microsoft Planetary Computer) needs a free SAS token; anything else is as-is.
+sign() {
+  local url="$1"
+  case "$url" in
+    *.blob.core.windows.net/*)
+      case "$url" in *sig=*) echo "$url"; return;; esac
+      local rest="${url#https://}" account container token sep="?"
+      account="${rest%%.*}"
+      container="${rest#*/}"; container="${container%%/*}"
+      token=$(curl -fsS "https://planetarycomputer.microsoft.com/api/sas/v1/token/$account/$container" \
+        | sed -n 's/.*"token": *"\([^"]*\)".*/\1/p' | sed 's/\\u0026/\&/g')
+      case "$url" in *\?*) sep="&";; esac
+      echo "${url}${sep}${token}";;
+    *) echo "$url";;
+  esac
+}
+
+# One "file name|url" line per tile.
+fetch() {
+  local name="${1%%|*}" url="${1#*|}"
+  local out="$DEST/$name"
+  if [ -e "$out" ]; then echo "already there: $name"; return; fi
+  if curl -fL --retry 3 -C - -o "$out.part" "$(sign "$url")"; then
+    mv "$out.part" "$out" && echo "downloaded: $name"
+  else
+    echo "FAILED: $name"
+  fi
+}
+export -f sign fetch
+
+grep -v '^$' <<'TILES' | tr '\n' '\0' | xargs -0 -P "$JOBS" -I{} bash -c 'fetch "$1"' _ {}
+@LINES@
+TILES
+'''
+
+
+def shell_script(entries: List[Entry]) -> str:
+    lines = "\n".join(f"{name}|{url}" for name, url in entries)
+    return _SH.replace("@HEADER@", _header(entries)).replace("@LINES@", lines)
+
+
+_R = r'''#!/usr/bin/env Rscript
+# @HEADER@
+# Base R only (no packages). Run with: Rscript "<this file>"   or source() it in R / RStudio.
+# A file that is not public (e.g. a private S3 bucket) needs its own credentials, which this does not handle.
+
+# Where the files go.
+dest <- "tiles"
+
+# Large files need more than R's 60 second default timeout.
+options(timeout = max(3600, getOption("timeout")))
+
+# (file name, url) of each tile.
+tiles <- list(
+@ROWS@
+)
+
+tokens <- new.env()
+
+# An Azure blob URL (Microsoft Planetary Computer) needs a free SAS token; anything else is as-is.
+sign <- function(url) {
+  host <- tolower(sub("^https?://([^/]+).*$", "\\1", url))
+  if (!grepl("\\.blob\\.core\\.windows\\.net$", host) || grepl("sig=", url, fixed = TRUE)) return(url)
+  account <- strsplit(host, ".", fixed = TRUE)[[1]][1]
+  container <- strsplit(sub("^https?://[^/]+/", "", url), "/", fixed = TRUE)[[1]][1]
+  key <- paste(account, container)
+  if (is.null(tokens[[key]])) {
+    api <- sprintf("https://planetarycomputer.microsoft.com/api/sas/v1/token/%s/%s", account, container)
+    body <- paste(readLines(api, warn = FALSE), collapse = "")
+    token <- sub('.*"token"\\s*:\\s*"([^"]*)".*', "\\1", body)
+    tokens[[key]] <- gsub("\\u0026", "&", token, fixed = TRUE)
+  }
+  paste0(url, if (grepl("?", url, fixed = TRUE)) "&" else "?", tokens[[key]])
+}
+
+fetch <- function(tile) {
+  name <- tile[1]
+  path <- file.path(dest, name)
+  if (file.exists(path)) return(paste(name, "already there"))
+  part <- paste0(path, ".part")
+  tryCatch({
+    status <- suppressWarnings(download.file(sign(tile[2]), part, mode = "wb", quiet = TRUE))
+    if (status != 0) stop("download.file returned ", status)
+    file.rename(part, path)
+    paste(name, "downloaded")
+  }, error = function(e) {
+    if (file.exists(part)) file.remove(part)
+    paste(name, "FAILED:", conditionMessage(e))
+  })
+}
+
+dir.create(dest, showWarnings = FALSE, recursive = TRUE)
+for (tile in tiles) cat(fetch(tile), "\n", sep = "")
+'''
+
+
+def r_script(entries: List[Entry]) -> str:
+    rows = ",\n".join(f"  c({json.dumps(name)}, {json.dumps(url)})" for name, url in entries)
+    return _R.replace("@HEADER@", _header(entries)).replace("@ROWS@", rows)
+
+
+def render(kind: str, entries: List[Entry]) -> str:
+    return {"notebook": notebook, "python": python_script, "r": r_script, "shell": shell_script}[kind](entries)

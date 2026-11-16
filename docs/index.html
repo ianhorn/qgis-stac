@@ -1,0 +1,692 @@
+<!doctype html>
+<html lang="en">
+<head>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-D25JMQKG9L"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-D25JMQKG9L');
+</script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kentucky STAC</title>
+<meta name="description" content="QGIS plugin for searching, loading and downloading Kentucky From Above imagery, elevation and LiDAR through its STAC API.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect x='2' y='2' width='56' height='56' rx='11' fill='%23336699'/%3E%3Cg fill='none' stroke='%23FFFFFF' stroke-width='5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M13 14 V42 M29 14 L13 30 M19 26 L30 42'/%3E%3Cpath d='M34 24 L41.5 40 M49 24 L39 48'/%3E%3C/g%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --brand: #336699;
+    --brand-dark: #24507a;
+    --brand-light: #e8f0f8;
+    --ink: #1b2430;
+    --ink-soft: #4b5768;
+    --bg: #ffffff;
+    --bg-alt: #f6f8fb;
+    --border: #e1e7ef;
+    --code-bg: #0f1724;
+    --code-ink: #cbd5e1;
+    --radius: 12px;
+    --max: 1040px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --brand: #6fa3d8;
+      --brand-dark: #8fb9e3;
+      --brand-light: #152636;
+      --ink: #e7edf5;
+      --ink-soft: #a9b6c7;
+      --bg: #0f1520;
+      --bg-alt: #141c29;
+      --border: #263040;
+      --code-bg: #0a0f18;
+      --code-ink: #c7d2e0;
+    }
+  }
+  :root[data-theme="dark"] {
+    --brand: #6fa3d8;
+    --brand-dark: #8fb9e3;
+    --brand-light: #152636;
+    --ink: #e7edf5;
+    --ink-soft: #a9b6c7;
+    --bg: #0f1520;
+    --bg-alt: #141c29;
+    --border: #263040;
+    --code-bg: #0a0f18;
+    --code-ink: #c7d2e0;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Inter", system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: var(--brand); }
+  code, .mono { font-family: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace; }
+  code {
+    background: var(--bg-alt);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 0.1em 0.4em;
+    font-size: 0.88em;
+  }
+  pre {
+    background: var(--code-bg);
+    color: var(--code-ink);
+    border-radius: var(--radius);
+    padding: 16px 18px;
+    overflow-x: auto;
+    font-size: 0.86em;
+    line-height: 1.55;
+  }
+  pre code { background: none; border: none; padding: 0; color: inherit; }
+
+  /* ---- header / hero ---------------------------------------------------- */
+  header.hero {
+    background: linear-gradient(165deg, var(--brand) 0%, var(--brand-dark) 100%);
+    color: #fff;
+    padding: 56px 20px 72px;
+  }
+  .hero-inner { max-width: var(--max); margin: 0 auto; }
+  .brand-row { display: flex; align-items: center; gap: 14px; margin-bottom: 22px; }
+  .brand-icon { width: 44px; height: 44px; flex: none; border-radius: 10px; box-shadow: 0 4px 14px rgba(0,0,0,0.25); }
+  .brand-name { font-weight: 700; font-size: 1.05rem; letter-spacing: 0.01em; opacity: 0.95; }
+  h1.title { font-size: clamp(2rem, 4.4vw, 2.9rem); font-weight: 800; margin: 0 0 14px; letter-spacing: -0.01em; }
+  p.tagline { font-size: 1.15rem; max-width: 640px; opacity: 0.94; margin: 0 0 26px; }
+  .hero-badges { display: flex; flex-wrap: wrap; gap: 10px; }
+  .badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: rgba(255,255,255,0.14);
+    border: 1px solid rgba(255,255,255,0.28);
+    color: #fff;
+    padding: 6px 12px;
+    border-radius: 999px;
+    font-size: 0.82rem;
+    font-weight: 500;
+  }
+  .hero-links { margin-top: 28px; display: flex; gap: 12px; flex-wrap: wrap; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 10px 18px;
+    border-radius: 999px;
+    font-weight: 600;
+    font-size: 0.92rem;
+    text-decoration: none;
+    border: 1px solid transparent;
+    cursor: pointer;
+  }
+  .btn-light { background: #fff; color: var(--brand-dark); }
+  .btn-outline { background: transparent; color: #fff; border-color: rgba(255,255,255,0.55); }
+
+  /* ---- layout ------------------------------------------------------------ */
+  .shell { max-width: var(--max); margin: -40px auto 0; padding: 0 20px 80px; display: grid; grid-template-columns: 220px 1fr; gap: 40px; }
+  @media (max-width: 860px) { .shell { grid-template-columns: 1fr; margin-top: 0; } }
+
+  nav.toc {
+    position: sticky; top: 20px; align-self: start;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px 16px;
+    box-shadow: 0 10px 30px rgba(20,30,50,0.06);
+  }
+  @media (max-width: 860px) { nav.toc { position: static; margin-top: 24px; } }
+  nav.toc .toc-label { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-soft); margin-bottom: 10px; font-weight: 600; }
+  nav.toc a { display: block; padding: 5px 0; font-size: 0.88rem; color: var(--ink-soft); text-decoration: none; border-left: 2px solid transparent; padding-left: 10px; margin-left: -1px; }
+  nav.toc a:hover { color: var(--brand); }
+  nav.toc a.active { color: var(--brand); border-left-color: var(--brand); font-weight: 600; }
+
+  main { min-width: 0; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 8px 36px 20px; box-shadow: 0 10px 30px rgba(20,30,50,0.06); }
+  @media (max-width: 600px) { main { padding: 4px 18px 10px; } }
+
+  section { padding: 40px 0; border-bottom: 1px solid var(--border); }
+  section:last-of-type { border-bottom: none; }
+  section h2 { font-size: 1.5rem; margin: 0 0 6px; scroll-margin-top: 20px; letter-spacing: -0.01em; }
+  section .lede { color: var(--ink-soft); margin: 0 0 22px; font-size: 0.98rem; }
+  h3 { font-size: 1.1rem; margin: 28px 0 8px; }
+  h3:first-of-type { margin-top: 10px; }
+  p { color: var(--ink); }
+  ul, ol { padding-left: 1.3em; }
+  li { margin: 6px 0; }
+
+  .card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; margin: 18px 0; }
+  .card {
+    border: 1px solid var(--border);
+    background: var(--bg-alt);
+    border-radius: 10px;
+    padding: 16px 18px;
+  }
+  .card h4 { margin: 0 0 6px; font-size: 0.98rem; display: flex; align-items: center; gap: 8px; }
+  .card p { margin: 0; font-size: 0.88rem; color: var(--ink-soft); }
+
+  .pill-row { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 20px; }
+  .pill { background: var(--brand-light); color: var(--brand-dark); border-radius: 999px; padding: 4px 11px; font-size: 0.78rem; font-weight: 600; }
+
+  table { width: 100%; border-collapse: collapse; margin: 14px 0; font-size: 0.9rem; }
+  th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { color: var(--ink-soft); font-weight: 600; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.04em; }
+
+  .callout {
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    padding: 14px 16px;
+    margin: 16px 0;
+    font-size: 0.92rem;
+    display: flex;
+    gap: 12px;
+  }
+  .callout .icon { flex: none; font-size: 1.1rem; line-height: 1.4; }
+  .callout-note { background: var(--brand-light); border-color: color-mix(in srgb, var(--brand) 25%, var(--border)); }
+  .callout-warn { background: #fff7e8; border-color: #f1d8a6; }
+  :root[data-theme="dark"] .callout-warn, @media (prefers-color-scheme: dark) { }
+  .callout-warn { color: #6b4b06; }
+  :root[data-theme="dark"] .callout-warn { background: #2a2210; border-color: #4a3c15; color: #e8c979; }
+
+  footer { max-width: var(--max); margin: 0 auto; padding: 30px 20px 60px; color: var(--ink-soft); font-size: 0.85rem; text-align: center; }
+  footer a { color: var(--ink-soft); }
+
+  .kbd { font-family: "JetBrains Mono", monospace; background: var(--bg-alt); border: 1px solid var(--border); border-bottom-width: 2px; border-radius: 5px; padding: 1px 6px; font-size: 0.82em; }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="hero-inner">
+    <div class="brand-row">
+      <svg class="brand-icon" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+        <rect x="2" y="2" width="56" height="56" rx="11" fill="#ffffff" opacity="0.14"/>
+        <rect x="2" y="2" width="56" height="56" rx="11" fill="#1b3a5a"/>
+        <g fill="none" stroke="#FFFFFF" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M13 14 V42 M29 14 L13 30 M19 26 L30 42"/>
+          <path d="M34 24 L41.5 40 M49 24 L39 48"/>
+        </g>
+      </svg>
+      <span class="brand-name">Kentucky STAC</span>
+    </div>
+    <h1 class="title">Search, stream and download Kentucky From Above imagery, DEM and LiDAR &mdash; right inside QGIS.</h1>
+    <p class="tagline">A QGIS plugin that talks directly to the Kentucky From Above STAC API: draw an area of
+      interest, search imagery, elevation and LiDAR collections, preview results, and stream or download
+      exactly the tiles you need &mdash; no manual catalog browsing, no separate download manager.</p>
+    <div class="hero-badges">
+      <span class="badge">QGIS 3.44 LTR (OSGeo4W)</span>
+      <span class="badge">GPL-2.0-or-later</span>
+      <span class="badge">Open source</span>
+    </div>
+    <div class="hero-links">
+      <a class="btn btn-light" href="#installation">Get started</a>
+      <a class="btn btn-outline" href="#features">See what it does</a>
+      <a class="btn btn-outline" href="https://github.com/ianhorn/kentucky-stac" target="_blank" rel="noopener">View on GitHub</a>
+    </div>
+  </div>
+</header>
+
+<div class="shell">
+  <nav class="toc" id="toc">
+    <div class="toc-label">On this page</div>
+    <a href="#overview">Overview</a>
+    <a href="#installation">Installation</a>
+    <a href="#aoi">Area of interest</a>
+    <a href="#searching">Searching</a>
+    <a href="#sources">Other STAC APIs</a>
+    <a href="#logins">Sources that need a login</a>
+    <a href="#results">Results list</a>
+    <a href="#imagery-actions">Imagery / DEM actions</a>
+    <a href="#lidar-actions">LiDAR actions</a>
+    <a href="#point-filter">Point filter</a>
+    <a href="#bands-menu">Right-click: bands &amp; indices</a>
+    <a href="#export-script">Export as script</a>
+    <a href="#clip">Clip to area of interest</a>
+    <a href="#known-issues">Known issues</a>
+    <a href="#feedback">Help &amp; feedback</a>
+    <a href="#origins">Where this came from</a>
+  </nav>
+
+  <main>
+
+  <section id="overview">
+    <h2>Overview</h2>
+    <p class="lede">Kentucky STAC is the QGIS successor to two ArcGIS Pro add-ins &mdash; <code>kyfromabove-stac-addin</code>
+      (imagery &amp; elevation) and <code>kylidar-addin</code> (LiDAR) &mdash; merged into a single tabbed dock panel.</p>
+    <p>The plugin adds one dock, <strong>Kentucky STAC</strong>, with two tabs: <strong>Imagery / DEM</strong> and
+      <strong>LiDAR Pointcloud</strong>. Both work the same way: set an area of interest, pick one or more
+      collections, search, then add results to the map, download them, or export them for use outside QGIS.</p>
+    <div class="pill-row">
+      <span class="pill">STAC search</span>
+      <span class="pill">COG / COPC streaming</span>
+      <span class="pill">Virtual Point Cloud export</span>
+      <span class="pill">GDAL VRT mosaics</span>
+      <span class="pill">MosaicJSON export</span>
+      <span class="pill">Download scripts</span>
+      <span class="pill">Map-linked results</span>
+      <span class="pill">Band combinations &amp; indices</span>
+      <span class="pill">titiler-pgstac mosaics</span>
+      <span class="pill">PDAL AOI clipping</span>
+    </div>
+  </section>
+
+  <section id="installation">
+    <h2>Installation</h2>
+    <p class="lede">The plugin targets QGIS's own bundled Python, GDAL and PDAL &mdash; no separate package
+      manager or virtual environment is involved.</p>
+    <h3>Requirements</h3>
+    <ul>
+      <li><strong>QGIS 3.34 or later</strong>; the 3.44 LTR, installed via <a href="https://trac.osgeo.org/osgeo4w/" target="_blank" rel="noopener">OSGeo4W</a>, is the build it is developed on.</li>
+      <li><strong>QGIS 4 (Qt6)</strong> is supported too: search, streaming, downloads, mosaics, Virtual Point Clouds and clipping were all exercised on 4.2.3, and the plugin is listed for it in the plugin repository.</li>
+      <li>PDAL, bundled with OSGeo4W, is required for point cloud AOI clipping and for filtering downloaded point clouds by class or return, and is already on <code>PATH</code> inside a normal OSGeo4W install.</li>
+    </ul>
+    <h3>Install the plugin</h3>
+    <p><strong>From the QGIS plugin repository (recommended).</strong> Open <strong>Plugins &rarr; Manage and Install Plugins</strong> and search for
+      <strong>Kentucky STAC</strong> under <strong>All</strong>, then click <strong>Install Plugin</strong>. It is also at
+      <a href="https://plugins.qgis.org/plugins/kentucky_stac/" target="_blank" rel="noopener">plugins.qgis.org/plugins/kentucky_stac</a>, and each
+      version&rsquo;s zip is on the <a href="https://github.com/ianhorn/kentucky-stac/releases" target="_blank" rel="noopener">GitHub Releases</a> page
+      (<strong>Install from ZIP</strong> works with it too).</p>
+    <p><strong>From source, for development.</strong> The source is on GitHub at
+      <a href="https://github.com/ianhorn/kentucky-stac" target="_blank" rel="noopener">ianhorn/kentucky-stac</a>
+      (<code>git clone https://github.com/ianhorn/kentucky-stac.git</code>); the plugin is the <code>kentucky_stac/</code> folder.</p>
+    <p>Copy (or symlink/junction) the <code>kentucky_stac/</code> folder into your QGIS
+      profile's plugin directory:</p>
+    <pre><code>%APPDATA%\QGIS\QGIS3\profiles\default\python\plugins\kentucky_stac</code></pre>
+    <p>Either way, enable it under <strong>Plugins &rarr; Manage and Install Plugins &rarr; Installed</strong> and open
+      it from <strong>Plugins &rarr; Kentucky STAC</strong> (or the toolbar icon). A junction to your working copy means
+      <em>Uninstall</em> or <em>Install from ZIP</em> in the Plugin Manager would delete the working copy, so don&rsquo;t use those while developing. The
+      <a href="https://plugins.qgis.org/plugins/plugin_reloader/" target="_blank" rel="noopener">Plugin Reloader</a>
+      plugin picks up code changes without restarting QGIS.</p>
+  </section>
+
+  <section id="aoi">
+    <h2>Area of interest</h2>
+    <p class="lede">Every search is scoped to an area of interest (AOI), set with the tools at the top of the
+      dock, shared by both tabs.</p>
+    <div class="card-grid">
+      <div class="card"><h4>Point / Line / Polygon</h4><p>Click to place vertices; right-click to finish a line or polygon (a point finishes on the first click). <span class="kbd">Backspace</span> undoes the last vertex, <span class="kbd">Esc</span> cancels.</p></div>
+      <div class="card"><h4>Select features</h4><p>Click, or drag a box over, existing vector features on the map &mdash; their combined outline becomes the AOI.</p></div>
+      <div class="card"><h4>Current extent</h4><p>Uses whatever area the map canvas is currently showing as a rectangular AOI.</p></div>
+      <div class="card"><h4>Clear</h4><p>Clears the AOI and any feature selection.</p></div>
+    </div>
+    <p>Each drawing/selection tool is one-shot: once it successfully sets an AOI, it deactivates itself (its
+      toolbar button un-highlights) rather than staying armed, since a new AOI always replaces the old one
+      outright. <strong>Clear</strong> and <strong>Current extent</strong> also release a tool that was armed
+      but never used.</p>
+  </section>
+
+  <section id="searching">
+    <h2>Searching</h2>
+    <p class="lede">Each tab lists the collections available for its kind of data (imagery/DEM phases, or
+      LiDAR phases) as a checklist.</p>
+    <ul>
+      <li>Collections start <strong>unchecked</strong> &mdash; pick one or more before searching.</li>
+      <li><strong>Select All</strong> / <strong>Clear Selection</strong> toggle every collection at once.</li>
+      <li><strong>Zoom to collection</strong> (under Reload) zooms the map to the area the ticked collection(s) cover, as their catalog states it; it is grayed out when nothing is ticked or the catalog gives no area.</li>
+      <li><strong>Search area of interest</strong> runs the STAC search, scoped to the checked collections and the current AOI.</li>
+    </ul>
+    <h3>Filters</h3>
+    <p>The collapsed <strong>Filters</strong> section above the search button narrows a search; its header shows how many
+      are active, and <strong>Reset filters</strong> clears them all. <strong>Sort</strong> and <strong>Max tiles</strong>
+      sit on the same row as the Filters header, so they are always visible.</p>
+    <ul>
+      <li><strong>From / To</strong> &mdash; only tiles captured in that date range (the end day is included).</li>
+      <li><strong>Max cloud cover</strong> &mdash; imagery tabs only. Tiles that report no cloud cover (radar, elevation,
+        aerial imagery) are kept. Some servers (Earth Search, for one) can only apply this strictly, which also hides tiles
+        without cloud data; the plugin tells you when that happens.</li>
+      <li><strong>Sort</strong> &mdash; by capture date, newest or oldest first. With more matches than the limit,
+        &ldquo;Newest first&rdquo; keeps the latest. A server that can&rsquo;t sort is sorted here instead.</li>
+      <li><strong>Max tiles</strong> &mdash; the most tiles fetched per source (default 20; raise it to see more of a big result).</li>
+    </ul>
+    <p>Large catalogs such as Sentinel-2 are much faster with a date range. If a server can&rsquo;t return a big page, the
+      plugin retries with smaller pages automatically.</p>
+  </section>
+
+  <section id="sources">
+    <h2>Other STAC APIs (experimental)</h2>
+    <p class="lede">Besides the built-in KyFromAbove catalog, the dock can search any public STAC API &mdash;
+      picked from <a href="https://stacindex.org" target="_blank" rel="noopener">STAC Index</a> or typed in by URL.</p>
+    <ul>
+      <li><strong>Sources...</strong> (above the tabs) opens the source list. Choose a catalog from the
+        <strong>STAC Index</strong> dropdown (which fills in a name and URL), or type an API base URL yourself.
+        The list starts with KyFromAbove, then Microsoft Planetary Computer, then the rest of STAC Index A&ndash;Z.</li>
+      <li><strong>Add</strong> searches the new API alongside the current sources; <strong>Replace all sources</strong>
+        searches only it. Picking <strong>KyFromAbove</strong> from the dropdown is the way back to the default.</li>
+      <li>Another source's collections are labeled <code>Title &middot; Source name</code> in the checklist and in
+        the results. While any source other than KyFromAbove is active, the two tabs are renamed
+        <strong>Raster</strong> and <strong>Point Cloud</strong>. Raster has the imagery/DEM actions and Point Cloud has the
+        same actions as the LiDAR tab (streaming, download, Virtual Point Clouds with their options, clipping to the AOI,
+        Export as script). Another source&rsquo;s collections are listed on <strong>both</strong> tabs, since they can&rsquo;t be
+        classified reliably: pick a point cloud collection on Point Cloud, anything else on Raster. With KyFromAbove alone the
+        tabs are called Imagery / DEM and LiDAR Pointcloud, and its own collections stay on their matching tab.</li>
+      <li>Each source loads and searches independently: an unreachable API is reported, but doesn't stop the others.</li>
+      <li>The source list is remembered between QGIS sessions.</li>
+      <li>If an API or its files need a login, set one with <strong>Login</strong>; see <a href="#logins">Sources that need a login</a>.</li>
+      <li>Use the API&rsquo;s base URL, the one that answers <code>/collections</code>, not its browser documentation page
+        (for example <code>https://landsatlook.usgs.gov/stac-server</code>, not <code>.../stac-server/api.html</code>).</li>
+      <li>Some catalogs list tiles whose files need a login, such as USGS Landsat Look, whose files redirect to a USGS sign-in page.
+        The plugin can&rsquo;t sign in, so those tiles can&rsquo;t be streamed or downloaded; use an open copy of the data instead
+        (Landsat is also on Microsoft Planetary Computer).</li>
+    </ul>
+    <p>Other APIs implement STAC differently, so thumbnails, adding to the map, or downloads may not work for
+      every one. Files at <code>s3://</code> addresses (common outside KyFromAbove) are handled for you:
+      public ones are downloaded and streamed through their https address. Files on Azure Blob Storage, which is
+      how Microsoft Planetary Computer serves its assets, are signed automatically with a free SAS token from the
+      Planetary Computer&rsquo;s token service (cached until shortly before it expires). Private and requester-pays buckets
+      (e.g. NAIP on Earth Search) need your own AWS credentials, set as the <code>AWS_ACCESS_KEY_ID</code> /
+      <code>AWS_SECRET_ACCESS_KEY</code> environment variables or in <code>~/.aws/credentials</code>
+      (restart QGIS after setting them). With credentials found, files are read through GDAL&rsquo;s signed S3
+      access, and for requester-pays buckets the transfer charges go to your AWS account. <strong>Add as server mosaic</strong> uses KyFromAbove&rsquo;s titiler-pgstac server for KyFromAbove tiles. For
+      tiles from another source the button stays <strong>grayed out</strong> until you have brought your own titiler: set it under
+      <strong>Sources... &rarr; Tile server...</strong> (hover the button to see which source needs one). If you select tiles from
+      several sources, the ones without a tile server are left out. This is <strong>experimental</strong>.
+      Two kinds of server work, and the plugin works out which yours is:</p>
+    <ul>
+      <li><a href="https://github.com/stac-utils/titiler-pgstac" target="_blank" rel="noopener">titiler-pgstac</a> connected
+        to that API&rsquo;s catalog &mdash; one mosaic layer per collection.</li>
+      <li>A plain <a href="https://developmentseed.org/titiler/" target="_blank" rel="noopener">titiler</a> &mdash; one layer
+        per tile (up to 50 at a time), each reading the tile&rsquo;s own file. No catalog connection needed.</li>
+    </ul>
+    <p>The server must be able to read the files: public https is fine; <code>s3://</code> files need the server to have its own
+      AWS access. The dialog&rsquo;s <strong>i</strong> button explains this.</p>
+  </section>
+
+  <section id="logins">
+    <h2>Sources that need a login</h2>
+    <p class="lede">Some APIs, and many of the data files they point to, refuse anonymous requests: a private catalog, an
+      Earthdata or USGS account, a private S3 bucket. A source can carry one <strong>QGIS authentication configuration</strong>, which the plugin
+      then uses for that source&rsquo;s API calls and for reading and downloading its files.</p>
+    <h3>Set it up</h3>
+    <ol>
+      <li>Open <strong>Sources&hellip;</strong>. For a source you are adding, use the <strong>Login</strong> row; for one already in the list, select it
+        and press <strong>Login&hellip;</strong>.</li>
+      <li>Pick an existing configuration from QGIS&rsquo;s own selector, or press its green <strong>+</strong> to create one (QGIS asks for its master
+        password the first time). The same configurations are managed under <em>Settings &rarr; Options &rarr; Authentication</em>.</li>
+      <li>The source shows <em>(login set)</em> in the list and its collections reload with the login.</li>
+    </ol>
+    <h3>Which kind of configuration</h3>
+    <table>
+      <tr><th>You have</th><th>Use</th></tr>
+      <tr><td>An API key or token sent in a header</td><td><strong>API Header</strong> (for a bearer token: header <code>Authorization</code>, value <code>Bearer &hellip;</code>)</td></tr>
+      <tr><td>A user name and password</td><td><strong>Basic</strong></td></tr>
+      <tr><td>A single sign-on login</td><td><strong>OAuth2</strong>, set up in QGIS in the usual way</td></tr>
+      <tr><td>AWS keys for an <code>s3://</code> bucket</td><td><strong>AWS S3</strong> (a <strong>Basic</strong> configuration holding the access key ID and secret also works)</td></tr>
+    </table>
+    <h3>Where the login goes</h3>
+    <ul>
+      <li>It goes with the plugin&rsquo;s own requests to that source: collections, searches, thumbnails, file sizes and downloads.</li>
+      <li>For reading files with GDAL (adding to the map, band combinations, indices) it is given to GDAL for that file&rsquo;s own host or bucket only,
+        so another site never receives it. Passwords and keys stay in QGIS&rsquo;s encrypted Authentication database; the plugin keeps just the configuration&rsquo;s id.</li>
+      <li>A refused request says so: <em>a login was sent; check that it is the right one</em>, or <em>this source may need a login</em> when none was set.</li>
+    </ul>
+    <p><strong>Point clouds behind a login can be downloaded but not streamed.</strong> QGIS&rsquo;s point cloud reader has no way to
+      send a login (tested with header and basic logins on QGIS 3.44 and 4.2), so <em>Add selected to map</em> and
+      <em>Add selected as Virtual Point Cloud</em> say so for such a tile and leave it out; <em>Download selected&hellip;</em> sends the
+      login, and the downloaded file can then be added. Rasters, the catalog requests, file sizes and downloads do use the login
+      (checked against a server that demands a Bearer header and one that demands basic authentication).</p>
+    <p>Not covered yet: certificate (PKI) configurations for reading files.
+      Credentials found in the environment or <code>~/.aws/credentials</code> are still used for <code>s3://</code> files without any setting, as before.</p>
+  </section>
+
+  <section id="results">
+    <h2>Results list</h2>
+    <p class="lede">Each matching tile is shown as a card: a checkbox, the tile id, collection, capture date,
+      file size (once known), coordinate reference system, and &mdash; for LiDAR &mdash; its point count, next
+      to a thumbnail preview.</p>
+    <p><strong>Hover for the raw JSON.</strong> Rest the mouse on a tile for half a second and a card opens beside the
+      panel with that tile&rsquo;s STAC item exactly as the catalog returned it: properties, assets, links. It stays open
+      while the mouse is over the tile or the card, so you can scroll it, select and copy text, and click any URL.</p>
+    <p>Two buttons at the top left of the card choose how to read it: <strong>JSON</strong> (the default) is the item exactly as the catalog
+      returned it; <strong>HTML</strong> is a friendlier page with the tile&rsquo;s properties in a table, its assets with size, type and
+      actions, and its links, all scrollable. The choice is remembered, and the asset actions below work in both views.</p>
+    <h3>Work with a tile&rsquo;s assets from the card</h3>
+    <p>Under each asset&rsquo;s URL the card shows <code>[ download | copy URL | add to map ]</code>.</p>
+    <ul>
+      <li><strong>download</strong> asks where to save that one file and saves it with the usual progress bar. It never adds the file to the map afterwards.</li>
+      <li><strong>copy URL</strong> puts the asset&rsquo;s address on the clipboard. For a Planetary Computer (Azure) asset it is a signed link that works for a limited time.</li>
+      <li><strong>add to map</strong> streams that asset as a layer. It is offered only for rasters (GeoTIFF, JPEG 2000) and COPC point clouds, not for thumbnails, metadata files or plain LAZ.</li>
+    </ul>
+    <p>Press <strong>Pin open</strong> on the card to keep it up while you work through several assets: it stays when the mouse leaves, when you
+      hover other tiles or scroll the list, and after each action. A pinned card is a floating panel: drag its top bar to move it and its bottom-right
+      corner to resize it. <strong>Close</strong> (or <strong>Unpin</strong>) puts it away; a new search closes it too.</p>
+    <table>
+      <tr><th>Field</th><th>Notes</th></tr>
+      <tr><td>Size</td><td>Blank until you download or check sizes &mdash; the catalog doesn't carry file size up front.</td></tr>
+      <tr><td>Projection</td><td>A plain <code>EPSG:N</code> for imagery/DEM. LiDAR tiles have a compound
+        horizontal+vertical CRS with no single EPSG code, so it's shown as <code>EPSG:horizontal/EPSG:vertical</code>
+        (e.g. <code>EPSG:6473/EPSG:6360</code> for NAD83(2011) Kentucky Single Zone + NAVD88 height).</td></tr>
+      <tr><td>Points</td><td>LiDAR tiles only, from the catalog's own point count &mdash; not re-derived.</td></tr>
+    </table>
+    <h3>Selecting tiles</h3>
+    <p>Click a tile, or its checkbox, to toggle just that tile: pick as many as you like one after another, with no Ctrl needed.
+      <strong>Select All</strong> / <strong>Clear Selection</strong> above the results (or Ctrl+A) take or drop everything. The checkbox and the
+      row highlight always agree.</p>
+    <h3>The list and the map follow each other</h3>
+    <ul>
+      <li>Selecting tiles in the list selects their footprints on the map, as before.</li>
+      <li><strong>Hover the map</strong> over a footprint and the matching tile(s) light up in warm yellow in the list, which scrolls to the first.
+        Where footprints overlap, every tile under the pointer is tinted. Moving off the footprints, or off the map, clears it.</li>
+      <li><strong>Select footprints on the map</strong> with any QGIS Select tool (with the results layer active) and those tiles become selected in the list,
+        so Add to map, Download and the rest act on them.</li>
+    </ul>
+  </section>
+
+  <section id="imagery-actions">
+    <h2>Imagery / DEM actions</h2>
+    <div class="card-grid">
+      <div class="card"><h4>Add selected to map</h4><p>Streams the selected COG tiles directly as map layers &mdash; no download.</p></div>
+      <div class="card"><h4>Download selected&hellip;</h4><p>Downloads the selected tiles to a folder you choose, after checking their total size.</p></div>
+      <div class="card"><h4>Export VRT</h4><p>Stitches the selected tiles into a GDAL virtual raster, one per collection, and adds it to the map.</p></div>
+      <div class="card"><h4>Export as MosaicJSON&hellip;</h4><p>Writes a <a href="https://github.com/developmentseed/mosaicjson-spec" target="_blank" rel="noopener">MosaicJSON</a> file per collection &mdash; a portable index that titiler, rio-tiler or cogeo-mosaic can read directly, with no GDAL or server round trip involved.</p></div>
+      <div class="card"><h4>Add as server mosaic</h4><p>Registers a titiler-pgstac search restricted to the selected tiles and streams it &mdash; a precise crop of the statewide mosaic, with no download or local stitching.</p></div>
+      <div class="card"><h4>Export as script&hellip;</h4><p>Saves a Jupyter notebook, Python, R or shell script that downloads the selected tiles outside QGIS. See <a href="#export-script">Export as script</a>.</p></div>
+      <div class="card"><h4>Right-click a tile</h4><p>Add one band, a band combination (color infrared, SWIR...) or an index (NDVI, NDWI, your own formula). See <a href="#bands-menu">Right-click: bands &amp; indices</a>.</p></div>
+    </div>
+  </section>
+
+  <section id="lidar-actions">
+    <h2>LiDAR actions</h2>
+    <div class="card-grid">
+      <div class="card"><h4>Add selected to map</h4><p>Streams selected COPC tiles directly. Plain LAZ/LAS tiles (Phase 1) can't be streamed this way &mdash; download them instead.</p></div>
+      <div class="card"><h4>Download selected&hellip;</h4><p>Downloads the selected point cloud tiles to a folder you choose.</p></div>
+      <div class="card"><h4>Add selected as Virtual Point Cloud</h4><p>Combines the selected COPC tiles into one Virtual Point Cloud (<code>.vpc</code>) layer, streamed directly from their remote URLs &mdash; no download, no local file beyond the small index itself.</p></div>
+      <div class="card"><h4>Export as script&hellip;</h4><p>Saves a Jupyter notebook, Python, R or shell script that downloads the selected tiles outside QGIS. See <a href="#export-script">Export as script</a>.</p></div>
+    </div>
+    <p><strong>Add downloaded files to the map</strong> (unchecked by default) adds files after a download
+      completes; two or more LiDAR tiles are combined into one Virtual Point Cloud layer automatically.</p>
+    <h3>Virtual point cloud options</h3>
+    <p>With <strong>Add downloaded files to the map</strong> ticked and two or more tiles selected, clicking
+      <strong>Download selected&hellip;</strong> first asks for the options of QGIS&rsquo;s
+      <em>Build virtual point cloud</em> algorithm. They are remembered between sessions:</p>
+    <ul>
+      <li><strong>Calculate boundary polygons</strong> &mdash; store each tile&rsquo;s exact data outline, not just its rectangle.</li>
+      <li><strong>Calculate statistics</strong> &mdash; store the range of each attribute so styling works straight away.</li>
+      <li><strong>Build overview point cloud</strong> &mdash; also write a thinned overview (every 1000th point) next to the <code>.vpc</code>.</li>
+    </ul>
+    <p>With all three unchecked (the default) the index is built instantly from the catalog&rsquo;s metadata. Any
+      option makes QGIS read every point of every tile in the background, which takes longer. The options are not
+      offered for <strong>Add selected as Virtual Point Cloud</strong>, which streams: the algorithm has to read
+      every point, and it never finished over https.</p>
+  </section>
+
+  <section id="point-filter">
+    <h2>Point filter (LiDAR)</h2>
+    <p class="lede">Choose which points of a point cloud to keep. On the LiDAR tab, open <strong>Point filter</strong>
+      (the collapsed bar just above the action buttons). Its header says what is kept, for example
+      <em>Point filter (Ground; last return)</em>.</p>
+    <ul>
+      <li><strong>Classes</strong> &mdash; tick the LAS classifications to keep (ground, vegetation, building, water, noise and so on).
+        The buttons above them choose a common set in one click: <em>All</em>, <em>Ground only</em>, <em>Without noise</em>,
+        <em>Vegetation</em>, <em>Buildings</em>. <em>Other (19 and up)</em> covers reserved and user-defined codes, so they are not dropped by accident.</li>
+      <li><strong>Returns</strong> &mdash; <em>All returns</em>, <em>First return</em> or <em>Last return</em>. A pulse with a single return counts as both first and last.</li>
+    </ul>
+    <p>The filter combines the two: Ground with Last return keeps only ground points that are last returns. It applies to three buttons:</p>
+    <table>
+      <tr><th>Button</th><th>With a filter on</th></tr>
+      <tr><td>Add selected to map</td><td>Each streamed tile is added with a filter, so only the kept points draw. The layer is named like <code>T1 (Ground; first return)</code>, and a filtered and an unfiltered copy of the same tile can be on the map together. Nothing is downloaded or changed on disk.</td></tr>
+      <tr><td>Download selected&hellip;</td><td>After the download, PDAL writes a filtered copy of each tile into a <code>filtered</code> folder beside the originals (the originals are kept). If <strong>Add downloaded files to the map</strong> is ticked, the copies are added; a tile with no points left is reported and left out.</td></tr>
+      <tr><td>Add selected as Virtual Point Cloud</td><td>QGIS cannot filter a virtual point cloud that streams its tiles. You are offered <em>Download and filter</em> (the tiles are downloaded, filtered by PDAL and combined) or <em>Add unfiltered</em>.</td></tr>
+    </table>
+    <p><strong>Export as script&hellip;</strong> does not use the filter. Downloading and filtering reads every point of every tile, so it takes a while; it needs PDAL (see <a href="#installation">Installation</a>).
+      With no class ticked there is nothing to keep, and the buttons say so instead of running.</p>
+  </section>
+
+  <section id="bands-menu">
+    <h2>Right-click: bands, combinations and indices</h2>
+    <p class="lede">Right-click a result (or a selection of results) on the Imagery / DEM or Raster tab. Besides <strong>Add to map</strong>
+      the menu offers three submenus, each applied to every selected tile that has the bands it needs. A right-click on a tile outside the
+      selection acts on that tile alone.</p>
+    <div class="card-grid">
+      <div class="card"><h4>Add as band combination</h4><p>True color, Color infrared (vegetation), Shortwave infrared, False color (urban), Agriculture, Geology and Bathymetric. Each is built from three separate band files into one layer with an automatic 2&ndash;98&nbsp;% contrast stretch.</p></div>
+      <div class="card"><h4>Add index</h4><p>NDVI, NDWI, MNDWI, NDMI, NBR, NDBI, SAVI and EVI, plus <strong>Custom formula&hellip;</strong>. Drawn red to green over &minus;1 to 1.</p></div>
+      <div class="card"><h4>Add asset (band)</h4><p>Every raster asset of the tile listed by its title, such as <em>Red - 10m (red)</em>: click one to add that band as its own layer, or choose <strong>Choose several&hellip;</strong> to tick as many bands as you like in one go (with a filter box and, optionally, one multi-band layer per tile instead of one layer per band).</p></div>
+    </div>
+    <h3>Which tiles offer what</h3>
+    <p>Bands are recognised by the catalog&rsquo;s own band names (<code>eo:bands</code> / <code>bands</code> common names such as
+      <code>red</code>, <code>nir</code>, <code>swir16</code>), or failing that by the asset&rsquo;s key. A combination or index is listed only when the tile
+      has every band it needs; with several tiles selected it shows <em>(n of m tiles)</em> when only some do, and the others are left out.
+      This suits multispectral sources such as Sentinel-2 and Landsat; a catalog that offers only a single image per tile (KyFromAbove&rsquo;s own
+      orthos, for example) just gets <strong>Add asset</strong>. The LiDAR / Point Cloud tab has no right-click menu: point clouds (LAZ and COPC) have no bands to pick from, so use the buttons under the list there.</p>
+    <h3>Choosing several bands</h3>
+    <p><strong>Add asset &rarr; Choose several&hellip;</strong> opens a list of the bands the selected tiles offer. Type in the filter box (for example
+      <code>swir</code>), tick the ones you want and press OK: each ticked band is added as its own layer for every selected tile that has it. Tick
+      <em>Combine the chosen bands into one multi-band layer</em> to get a single layer per tile instead, built from the bands in list order; exactly
+      three bands are drawn as a color image, and any other count can be restyled in Layer Properties.</p>
+    <h3>Custom formulas</h3>
+    <p><strong>Add index &rarr; Custom formula&hellip;</strong> takes a name and a formula over band names, for example
+      <code>(nir - red) / (nir + red)</code>. Use numbers, <code>+ - * / ^</code>, brackets and the functions <code>sqrt, abs, ln, log10, sin, cos, tan,
+      asin, acos, atan, min, max</code>; anything else is refused, and the dialog lists the bands the tile offers. Formulas are remembered and appear in the
+      <strong>Add index</strong> menu for the next tile; pick one in the dialog&rsquo;s <em>Saved</em> list and press <em>Delete</em> to forget it.</p>
+    <h3>How the layers are made</h3>
+    <ul>
+      <li><strong>Indices</strong> are calculated by QGIS as the map draws, straight from the remote files, using its virtual raster provider. Nothing is written
+        to disk, no GDAL add-ons are needed, and inputs at different resolutions (a 10&nbsp;m NIR band with a 20&nbsp;m SWIR band) are resampled for you. If the catalog gives a
+        reflectance scale and offset (<code>raster:bands</code>), they are applied first, which matters for ratios. Sentinel-2&rsquo;s &minus;0.1 offset can push the
+        index of very dark pixels slightly beyond the &minus;1 to 1 range.</li>
+      <li><strong>Band combinations</strong> are a small VRT file that lists the three remote bands. It is kept in your QGIS settings folder under
+        <code>kentucky_stac/vrt</code>, so a saved project keeps working.</li>
+      <li>Opening the remote files takes a few seconds, so the layer appears shortly after you choose it. Adding the same layer twice is skipped.</li>
+    </ul>
+  </section>
+
+  <section id="export-script">
+    <h2>Export as script</h2>
+    <p class="lede">Both tabs have an <strong>Export as script&hellip;</strong> button. Select tiles, click it, pick a format,
+      and choose where to save. The script downloads those tiles&rsquo; main files (the COG, or the COPC/LAZ file) outside QGIS.</p>
+    <ul>
+      <li><strong>Jupyter notebook (.ipynb)</strong> &mdash; separate cells for settings, the tile list, the helper functions and the download.</li>
+      <li><strong>Python script (.py)</strong> &mdash; standard library only. Set <code>DEST</code> and <code>WORKERS</code> at the top.</li>
+      <li><strong>R script (.R)</strong> &mdash; base R only, no packages. Set <code>dest</code> at the top; run with <code>Rscript</code> or in RStudio. Downloads one file at a time.</li>
+      <li><strong>Shell script (.sh)</strong> &mdash; bash and curl. Usage: <code>./download_tiles.sh [folder]</code>; <code>JOBS=8</code> sets how many download at once.</li>
+    </ul>
+    <p>All four skip files that already exist, turn <code>s3://</code> addresses into https, and fetch a Planetary Computer
+      SAS token when they run for Azure files (a token expires within the hour, so it can&rsquo;t be saved in the script).
+      Files that aren&rsquo;t public, such as a private S3 bucket, need their own credentials, which the scripts don&rsquo;t handle.</p>
+  </section>
+
+  <section id="clip">
+    <h2>Clip to area of interest</h2>
+    <p class="lede">Unchecked by default. When enabled with a polygon AOI, output is cropped to the AOI's
+      actual shape instead of the tiles' full rectangular extent.</p>
+    <table>
+      <tr><th>Context</th><th>Mechanism</th></tr>
+      <tr><td>Imagery/DEM &mdash; Export VRT</td><td>A GDAL warp cutline; pixels outside the AOI become nodata.</td></tr>
+      <tr><td>LiDAR &mdash; Download selected</td><td>A PDAL <code>filters.crop</code> pipeline, one crop stage per AOI part (merged if the AOI is multi-part), run per tile before combining into a VPC.</td></tr>
+    </table>
+    <div class="callout callout-note">
+      <span class="icon">&#8505;&#65039;</span>
+      <div>Only applies to the download/export flows. <strong>Add selected to map</strong> streams tiles directly
+        from their remote URLs, so there's no local file for a cutline or crop to act on.</div>
+    </div>
+  </section>
+
+  <section id="known-issues">
+    <h2>Known issues</h2>
+    <h3>A tile draws in the wrong place (a coordinate system problem)</h3>
+    <p>Now and then a layer lands far from where its tile belongs, with a Utah tile showing up in northern Africa the usual example.
+      The data is fine; QGIS has just read the tile&rsquo;s coordinate system (CRS) wrongly. It tends to happen with:</p>
+    <ul>
+      <li><strong>Compound coordinate systems</strong>, a map projection plus a height datum, such as <em>NAD83 / UTM zone 12N + NAVD88 height</em>.
+        USGS 3DEP rasters and point clouds use these. When QGIS can&rsquo;t convert one, it leaves the numbers as they are, so UTM metres are read as Web Mercator metres.</li>
+      <li>A file with <strong>no coordinate system</strong> of its own, which can pick up the project&rsquo;s.</li>
+      <li>Catalogs whose tile footprint is given as a <strong>3D box</strong> (with heights) rather than a flat one.</li>
+    </ul>
+    <p>The plugin checks where each layer lands against the footprint the catalog states, and corrects it where it can: it reads the
+      horizontal coordinate system from the file itself and uses that, and a point cloud&rsquo;s height datum is left out because a map doesn&rsquo;t need it.
+      Even so, a layer can still come out wrong, especially a file with an unusual or missing CRS. If one does:</p>
+    <ol>
+      <li><strong>Remove the layer and add it again.</strong> A layer already on the map is never re-checked, so a fix only applies to layers added afterwards.</li>
+      <li>Open the layer&rsquo;s <em>Properties &rarr; Information</em> to see the CRS it carries, and compare the tile&rsquo;s footprint on the results layer.</li>
+      <li>If it is still off, set the right CRS yourself with <em>Layer &rarr; Set Layer CRS</em> (the tile&rsquo;s coordinate system is in its JSON card,
+        often as <code>proj:epsg</code> or <code>proj:code</code>), and please <a href="#feedback">report it</a> with the collection and tile name so it can be handled.</li>
+    </ol>
+    <h3>"Preferred Transformation Not Available" dialog</h3>
+    <p>The first time QGIS needs to reproject between Kentucky's state plane CRS and WGS84, it may show a
+      dialog saying the preferred transform needs a grid file, <code>us_noaa_kyhpgn.tif</code>, that isn't
+      installed, and offers a 4&nbsp;m-accuracy fallback instead of the preferred 2&nbsp;m.</p>
+    <div class="callout callout-warn">
+      <span class="icon">&#9888;&#65039;</span>
+      <div>This is a PROJ/QGIS data notice, not a plugin bug. The accuracy difference is far below anything
+        this plugin's AOI search or placement logic is sensitive to &mdash; it's <strong>safe to click OK</strong>
+        and continue.</div>
+    </div>
+    <p>To stop seeing it: download the grid from
+      <a href="https://cdn.proj.org/us_noaa_kyhpgn.tif">cdn.proj.org/us_noaa_kyhpgn.tif</a> (a direct file,
+      not a page), then either use the dialog's own <strong>Install &hellip; from Folder</strong> button, or
+      drop it into your OSGeo4W install's PROJ data directory (<code>%OSGEO4W_ROOT%\share\proj\</code>) so
+      it's available to every tool using that PROJ install, not just QGIS.</p>
+  </section>
+
+  <section id="feedback">
+    <h2>Help &amp; feedback</h2>
+    <p><strong>Help</strong> (top of the dock) opens this page. <strong>Feedback</strong> offers two ways to reach the developer:
+      <strong>Report an Issue on GitHub</strong> opens a pre-filled issue in your browser (needs a free GitHub account; public), or
+      <strong>Send Feedback Directly</strong> sends a private message with no account needed. Your email is optional, only if you want a reply.
+      Both attach the plugin, QGIS and operating system versions automatically.</p>
+  </section>
+
+  <section id="origins">
+    <h2>Where this came from</h2>
+    <p>Kentucky STAC consolidates two separate ArcGIS Pro add-ins built for the same
+      <a href="https://kyfromabove.ky.gov/" target="_blank" rel="noopener">Kentucky From Above</a> catalog
+      &mdash; one for imagery/elevation, one for LiDAR &mdash; into a single cross-platform QGIS plugin with
+      one shared area-of-interest workflow instead of two separate tools.</p>
+    <p>The originals are
+      <a href="https://github.com/ianhorn/kyfromabove-stac-addin" target="_blank" rel="noopener">kyfromabove-stac-addin</a>
+      (imagery &amp; elevation) and
+      <a href="https://github.com/ianhorn/kylidar-addin" target="_blank" rel="noopener">kylidar-addin</a> (LiDAR);
+      this plugin lives at
+      <a href="https://github.com/ianhorn/kentucky-stac" target="_blank" rel="noopener">ianhorn/kentucky-stac</a>.</p>
+    <p>Licensed <a href="https://www.gnu.org/licenses/old-licenses/gpl-2.0.html" target="_blank" rel="noopener">GPL-2.0-or-later</a>.</p>
+  </section>
+
+  </main>
+</div>
+
+<footer>
+  Kentucky STAC &middot; QGIS plugin for the Kentucky From Above STAC catalog &middot;
+  <a href="https://github.com/ianhorn/kentucky-stac" target="_blank" rel="noopener">GitHub</a>
+</footer>
+
+<script>
+  // Highlight the current section in the sidebar TOC as the page scrolls.
+  (function () {
+    var links = Array.prototype.slice.call(document.querySelectorAll('nav.toc a'));
+    var sections = links.map(function (a) { return document.querySelector(a.getAttribute('href')); }).filter(Boolean);
+    function onScroll() {
+      var pos = window.scrollY + 120;
+      var current = sections[0];
+      sections.forEach(function (sec) { if (sec.offsetTop <= pos) current = sec; });
+      links.forEach(function (a) {
+        a.classList.toggle('active', current && a.getAttribute('href') === '#' + current.id);
+      });
+    }
+    document.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+  })();
+</script>
+
+</body>
+</html>
