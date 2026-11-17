@@ -1,7 +1,8 @@
-"""Which STAC APIs the dock searches: the built-in KyFromAbove catalog, plus any "bring your own"
-API the user adds -- typed in by hand, or picked from STAC Index (https://stacindex.org).
+"""Which STAC APIs the dock searches: the default Microsoft Planetary Computer catalog, plus any other
+API the user adds -- typed in by hand, or picked from STAC Index (https://stacindex.org), where
+KyFromAbove is just another entry.
 
-Ported from the ArcGIS Pro add-in (kyfromabove-ext: StacApiSource.cs, StacIndexClient.cs,
+Ported from the ArcGIS Pro add-in (stac-arcgispro-addin: StacApiSource.cs, StacIndexClient.cs,
 AddApiSourceDialog). Pure Python -- no QGIS import -- so the parsing/filtering is unit-testable;
 fetching and persistence (QgsSettings) live in the QGIS-side callers.
 """
@@ -16,7 +17,10 @@ from typing import Any, Iterable, List, Optional
 from .stac import DEFAULT_BASE_URI
 
 STAC_INDEX_URL = "https://stacindex.org/api/catalogs"
-BUILTIN_NAME = "KyFromAbove"
+KYFROMABOVE_NAME = "KyFromAbove"
+KYFROMABOVE_BASE_URI = "https://spved5ihrl.execute-api.us-west-2.amazonaws.com"  # offered as a pickable example source
+DEFAULT_NAME = "Microsoft Planetary Computer"
+_PC_HOST = "planetarycomputer.microsoft.com"
 _SUMMARY_MAX = 240
 
 
@@ -25,26 +29,27 @@ class ApiSource:
     name: str
     base_uri: str
     is_default: bool = False
-    # Optional titiler-pgstac server backed by this API's catalog, for "Add as server mosaic".
-    # The built-in source ignores it (it has its own tile server, see server_layers.tiler_url).
-    tiler_url: str = ""
     # The id of a QGIS authentication configuration (Settings > Options > Authentication) used for this
     # API and for reading its files. Only the id is stored here: the secrets stay in QGIS's encrypted database.
     auth_cfg: str = ""
 
 
-DEFAULT_SOURCE = ApiSource(BUILTIN_NAME, DEFAULT_BASE_URI, is_default=True)
+DEFAULT_SOURCE = ApiSource(DEFAULT_NAME, DEFAULT_BASE_URI, is_default=True)
 
 
 def normalize_url(url: str) -> str:
     return (url or "").strip().rstrip("/")
 
 
+def _is_planetary_computer(url: str) -> bool:
+    return urllib.parse.urlparse(normalize_url(url)).netloc.lower() == _PC_HOST
+
+
 def is_default_uri(base_uri: str) -> bool:
-    """True for the built-in catalog -- also for "" (an item/collection whose source was never
-    recorded), so Kentucky-only behavior keeps working for anything predating multi-source."""
+    """True for the default catalog (Planetary Computer) -- also for "" (an item/collection whose source
+    was never recorded)."""
     uri = normalize_url(base_uri)
-    return not uri or uri.lower() == normalize_url(DEFAULT_BASE_URI).lower()
+    return not uri or uri.lower() == normalize_url(DEFAULT_BASE_URI).lower() or _is_planetary_computer(uri)
 
 
 def is_valid_api_url(url: str) -> bool:
@@ -81,24 +86,29 @@ class CatalogEntry:
 
 
 BUILTIN_ENTRY = CatalogEntry(
-    "KyFromAbove (Kentucky's default catalog)",
-    BUILTIN_NAME,
+    "Microsoft Planetary Computer (default)",
+    DEFAULT_NAME,
     DEFAULT_BASE_URI,
-    f"{DEFAULT_BASE_URI}\n\nKentucky Aerial Photography and Elevation Data (KYAPED), 2010 - present: "
-    "leaf-off orthoimagery, LiDAR point clouds, and LiDAR-derived DEMs.",
+    f"{DEFAULT_BASE_URI}\n\nMicrosoft's open Planetary Computer catalog: Sentinel, Landsat, NAIP, "
+    "elevation and many other public datasets.",
     is_builtin=True,
 )
 
-
-def _is_planetary_computer(url: str) -> bool:
-    return urllib.parse.urlparse(url).netloc.lower() == "planetarycomputer.microsoft.com"
+KYFROMABOVE_ENTRY = CatalogEntry(
+    "KyFromAbove",
+    KYFROMABOVE_NAME,
+    KYFROMABOVE_BASE_URI,
+    f"{KYFROMABOVE_BASE_URI}\n\nKentucky Aerial Photography and Elevation Data (KYAPED), 2010 - present: "
+    "leaf-off orthoimagery, LiDAR point clouds, and LiDAR-derived DEMs.",
+)
 
 
 def parse_stac_index(data: Any) -> List[CatalogEntry]:
-    """Public, searchable STAC APIs from a STAC Index /api/catalogs response: the built-in KyFromAbove
-    entry always first (so it's the way back after switching APIs, even if STAC Index lists nothing
-    usable), then Microsoft Planetary Computer when listed, then the rest sorted by title.
-    Private/protected catalogs are left out: there's no way to supply credentials."""
+    """Public, searchable STAC APIs from a STAC Index /api/catalogs response: the default Microsoft
+    Planetary Computer entry always first (so it's the way back after switching APIs, even if STAC
+    Index lists nothing usable), then the rest sorted by title. KyFromAbove sorts in among them, and is
+    added in its place if STAC Index doesn't list it. Private/protected catalogs are left out: there's
+    no way to supply credentials."""
     entries: List[CatalogEntry] = []
     for el in data if isinstance(data, list) else []:
         if not isinstance(el, dict):
@@ -110,29 +120,27 @@ def parse_stac_index(data: Any) -> List[CatalogEntry]:
         if not title or not is_usable_base_url(url):
             continue
         base = normalize_url(url)
-        if is_default_uri(base):
-            continue  # BUILTIN_ENTRY covers it
+        if is_default_uri(base) or base.lower() == normalize_url(KYFROMABOVE_BASE_URI).lower():
+            continue  # BUILTIN_ENTRY / KYFROMABOVE_ENTRY cover them
         summary = (el.get("summary") or "").strip()
         if len(summary) > _SUMMARY_MAX:
             summary = summary[:_SUMMARY_MAX].rstrip() + "..."
         detail = f"{url}\n\n{summary}" if summary else url
         entries.append(CatalogEntry(title, title, base, detail))
+    entries.append(KYFROMABOVE_ENTRY)
     entries.sort(key=lambda e: e.title.casefold())
-    # Microsoft's Planetary Computer is the best-known other API, so it follows KyFromAbove; the rest stay A-Z.
-    featured = [e for e in entries if _is_planetary_computer(e.url)]
-    rest = [e for e in entries if not _is_planetary_computer(e.url)]
-    return [BUILTIN_ENTRY] + featured + rest
+    return [BUILTIN_ENTRY] + entries
 
 
 def serialize_sources(sources: Iterable[ApiSource]) -> str:
     return json.dumps(
-        [{"name": s.name, "base_uri": s.base_uri, "tiler_url": s.tiler_url, "auth_cfg": s.auth_cfg} for s in sources]
+        [{"name": s.name, "base_uri": s.base_uri, "auth_cfg": s.auth_cfg} for s in sources]
     )
 
 
 def deserialize_sources(text: Optional[str]) -> List[ApiSource]:
-    """The saved source list, or just the built-in catalog if nothing (valid) was saved. The
-    built-in entry is recognized by URL rather than trusted from the saved data, so it can't be
+    """The saved source list, or just the default catalog if nothing (valid) was saved. The
+    default entry is recognized by URL rather than trusted from the saved data, so it can't be
     duplicated or lose its is_default flag."""
     try:
         raw = json.loads(text) if text else None
@@ -151,15 +159,7 @@ def deserialize_sources(text: Optional[str]) -> List[ApiSource]:
             sources.append(DEFAULT_SOURCE)
         else:
             name = str(el.get("name") or "").strip() or uri
-            tiler = normalize_url(str(el.get("tiler_url") or ""))
-            sources.append(
-                ApiSource(
-                    name,
-                    uri,
-                    tiler_url=tiler if is_valid_api_url(tiler) else "",
-                    auth_cfg=_clean_cfg(el.get("auth_cfg")),
-                )
-            )
+            sources.append(ApiSource(name, uri, auth_cfg=_clean_cfg(el.get("auth_cfg"))))
     return sources or [DEFAULT_SOURCE]
 
 
@@ -169,20 +169,16 @@ def _clean_cfg(value) -> str:
     return text if text.isalnum() and len(text) <= 32 else ""
 
 
-def add_source(
-    sources: List[ApiSource], name: str, url: str, replace: bool, tiler_url: str = "", auth_cfg: str = ""
-) -> List[ApiSource]:
+def add_source(sources: List[ApiSource], name: str, url: str, replace: bool, auth_cfg: str = "") -> List[ApiSource]:
     """The source list after adding (or, with replace, switching to) the API at url. Picking the
-    built-in catalog's URL yields DEFAULT_SOURCE itself, not a user-named copy."""
+    default catalog's URL yields DEFAULT_SOURCE itself, not a user-named copy."""
     uri = normalize_url(url)
-    tiler = normalize_url(tiler_url)
     new = (
         DEFAULT_SOURCE
         if is_default_uri(uri)
         else ApiSource(
             (name or "").strip() or uri,
             uri,
-            tiler_url=tiler if is_valid_api_url(tiler) else "",
             auth_cfg=_clean_cfg(auth_cfg),
         )
     )
@@ -198,38 +194,22 @@ def source_name(sources: Iterable[ApiSource], base_uri: str) -> str:
     for s in sources:
         if normalize_url(s.base_uri).lower() == uri:
             return s.name
-    return BUILTIN_NAME if is_default_uri(base_uri) else base_uri
+    if normalize_url(base_uri).lower() == normalize_url(KYFROMABOVE_BASE_URI).lower():
+        return KYFROMABOVE_NAME
+    return DEFAULT_NAME if is_default_uri(base_uri) else base_uri
 
 
-def with_tiler_url(sources: Iterable[ApiSource], base_uri: str, tiler_url: str) -> List[ApiSource]:
-    """The source list with one source's tile server URL set (or cleared, with ""). The built-in
-    source is never changed."""
-    uri = normalize_url(base_uri).lower()
-    tiler = normalize_url(tiler_url)
-    return [
-        replace(s, tiler_url=tiler) if not s.is_default and normalize_url(s.base_uri).lower() == uri else s
-        for s in sources
-    ]
-
-
-def tiler_for(sources: Iterable[ApiSource], base_uri: str) -> str:
-    """The tile server URL configured for a source, or "" if none."""
-    uri = normalize_url(base_uri).lower()
-    for s in sources:
-        if not s.is_default and normalize_url(s.base_uri).lower() == uri:
-            return s.tiler_url
-    return ""
+def _editable(source: ApiSource, uri: str) -> bool:
+    """A source whose login can be set: any but the default catalog (public)."""
+    return not is_default_uri(source.base_uri) and normalize_url(source.base_uri).lower() == uri
 
 
 def with_auth_cfg(sources: Iterable[ApiSource], base_uri: str, auth_cfg: str) -> List[ApiSource]:
-    """The source list with one source's authentication config set (or cleared, with ""). The built-in
-    source is never changed."""
+    """The source list with one source's authentication config set (or cleared, with ""). The default
+    catalog is never changed."""
     uri = normalize_url(base_uri).lower()
     cfg = _clean_cfg(auth_cfg)
-    return [
-        replace(s, auth_cfg=cfg) if not s.is_default and normalize_url(s.base_uri).lower() == uri else s
-        for s in sources
-    ]
+    return [replace(s, auth_cfg=cfg) if _editable(s, uri) else s for s in sources]
 
 
 def auth_cfg_for(sources: Iterable[ApiSource], base_uri: str) -> str:

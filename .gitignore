@@ -5,7 +5,7 @@ __pycache__/
 .pytest_cache/
 dist/
 *.zip
-kentucky_stac/ext_libs/
+qgis_stac/ext_libs/
 .claude/settings.local.json
 
 # local test-download folder (real point cloud/imagery downloads, not project files)

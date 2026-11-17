@@ -100,7 +100,7 @@ class AoiBar(QGroupBox):
 
     def _notify(self, text: str, level):
         if self._bar is not None:
-            self._bar.pushMessage("Kentucky STAC", text, level=level, duration=6)
+            self._bar.pushMessage("STAC", text, level=level, duration=6)
 
     def clear(self):
         self._state.clear()

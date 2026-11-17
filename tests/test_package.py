@@ -11,13 +11,13 @@ _spec.loader.exec_module(package)
 
 
 def test_zip_has_one_top_level_folder_and_no_bytecode(tmp_path):
-    (ROOT / "kentucky_stac" / "__pycache__").mkdir(exist_ok=True)
+    (ROOT / "qgis_stac" / "__pycache__").mkdir(exist_ok=True)
     target = package.build_zip(tmp_path)
-    assert target.name == f"kentucky_stac-{package.plugin_version()}.zip"
+    assert target.name == f"qgis_stac-{package.plugin_version()}.zip"
     with zipfile.ZipFile(target) as archive:
         names = archive.namelist()
-    assert {name.split("/")[0] for name in names} == {"kentucky_stac"}
-    assert "kentucky_stac/metadata.txt" in names and "kentucky_stac/__init__.py" in names
+    assert {name.split("/")[0] for name in names} == {"qgis_stac"}
+    assert "qgis_stac/metadata.txt" in names and "qgis_stac/__init__.py" in names
     assert not any("__pycache__" in name or name.endswith(".pyc") for name in names)
 
 

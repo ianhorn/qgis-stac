@@ -27,12 +27,12 @@ from qgis.core import (
 )
 
 from . import auth, s3, signing
-from .catalog import DEFAULT_CRS, bbox_2d, can_add_to_map, primary_asset
+from .catalog import bbox_2d, can_add_to_map, item_crs, primary_asset
 from .diagnostics import log_exception
 from .gdal_setup import setup_gdal
 from .stac import Item
 
-GROUP_NAME = "Ky STAC"
+GROUP_NAME = "STAC"
 MAX_WORKERS = 4
 
 
@@ -52,6 +52,9 @@ class LayerSpec:
     # A QGIS point cloud filter expression (see point_filter.py) set on the layer once it is added, so only
     # some classes / return numbers draw. Not honoured by a "vpc" layer.
     subset: str = ""
+    # The CRS the catalog declares for the tile ("EPSG:N"), used only if the file has no CRS of its own or the
+    # one it has puts the tile in the wrong place. "" when the catalog says nothing.
+    crs: str = ""
 
 
 _payer_set = False
@@ -96,11 +99,13 @@ def layer_specs(items: Iterable[Item], lidar: bool) -> Tuple[List[LayerSpec], Li
             skipped.append(item)
         elif lidar:
             if asset.is_copc:
-                specs.append(LayerSpec(item.id, signing.fetchable_url(asset.href), "copc", bbox))
+                specs.append(LayerSpec(item.id, signing.fetchable_url(asset.href), "copc", bbox, crs=item_crs(item)))
             else:
                 skipped.append(item)
         else:
-            specs.append(LayerSpec(item.id, raster_uri(asset.href, auth.cfg_for_source(item.source)), "gdal", bbox))
+            specs.append(
+                LayerSpec(item.id, raster_uri(asset.href, auth.cfg_for_source(item.source)), "gdal", bbox, crs=item_crs(item))
+            )
     return specs, skipped
 
 
@@ -113,8 +118,8 @@ def asset_layer_spec(item: Item, key: str) -> Optional[LayerSpec]:
     name = f"{item.id} · {key}"
     bbox = item_bbox(item)
     if asset.is_copc:
-        return LayerSpec(name, signing.fetchable_url(asset.href), "copc", bbox)
-    return LayerSpec(name, raster_uri(asset.href, auth.cfg_for_source(item.source)), "gdal", bbox)
+        return LayerSpec(name, signing.fetchable_url(asset.href), "copc", bbox, crs=item_crs(item))
+    return LayerSpec(name, raster_uri(asset.href, auth.cfg_for_source(item.source)), "gdal", bbox, crs=item_crs(item))
 
 
 def union_bbox(boxes: List[Bbox]) -> Optional[Bbox]:
@@ -148,8 +153,8 @@ def local_specs(paths: Iterable[str], bboxes: Optional[Dict[str, Optional[Bbox]]
     return specs
 
 
-_EPSG_PROPERTY = "kentucky_stac/crs_epsg"  # the raster's horizontal EPSG code, worked out by GDAL on the worker
-_WKT_PROPERTY = "kentucky_stac/crs_wkt"  # the CRS's WKT, read on the worker thread while the CRS is still alive
+_EPSG_PROPERTY = "qgis_stac/crs_epsg"  # the raster's horizontal EPSG code, worked out by GDAL on the worker
+_WKT_PROPERTY = "qgis_stac/crs_wkt"  # the CRS's WKT, read on the worker thread while the CRS is still alive
 
 
 def _fresh_crs(crs: QgsCoordinateReferenceSystem, wkt: str = "") -> QgsCoordinateReferenceSystem:
@@ -214,16 +219,16 @@ def _is_placed(layer: QgsMapLayer, bbox: Bbox) -> bool:
     extent = _wgs84_extent(layer)
     if extent is None or extent.isEmpty():
         return False
-    # Tiles are ~0.02 degrees across, so a generous margin still separates Kentucky from Iran.
+    # Tiles are small, so a generous margin still tells a tile in the right place from one in another country.
     expected = QgsRectangle(*bbox).buffered(0.05)
     return expected.contains(extent.center())
 
 
-def ensure_placed(layer: QgsMapLayer, bbox: Optional[Bbox]) -> bool:
+def ensure_placed(layer: QgsMapLayer, bbox: Optional[Bbox], fallback_crs: str = "") -> bool:
     """Make sure the layer lands where the catalog says the tile is. A file with no CRS of its own
-    can pick up the project's CRS (say Web Mercator), which puts a Kentucky tile in Iran. If the
-    layer is misplaced and the Kentucky CRS puts it in the right place, switch to that CRS.
-    Returns True if the CRS was changed."""
+    can pick up the project's CRS (say Web Mercator), which puts the tile on the wrong continent. If the
+    layer is misplaced and the CRS the catalog declares for the tile (`fallback_crs`, "EPSG:N") puts it in
+    the right place, switch to that CRS. Returns True if the CRS was changed."""
     if bbox is None:
         return False
     if layer.crs().isValid() and _is_placed(layer, bbox):
@@ -234,10 +239,11 @@ def ensure_placed(layer: QgsMapLayer, bbox: Optional[Bbox]) -> bool:
         layer.setCrs(flat)
         if _is_placed(layer, bbox):
             return True
-    layer.setCrs(QgsCoordinateReferenceSystem(DEFAULT_CRS))
-    if _is_placed(layer, bbox):
-        return True
-    layer.setCrs(original)  # the fallback doesn't fit either; don't guess
+    if fallback_crs:
+        layer.setCrs(QgsCoordinateReferenceSystem(fallback_crs))
+        if _is_placed(layer, bbox):
+            return True
+    layer.setCrs(original)  # nothing fits; don't guess
     return False
 
 
@@ -345,10 +351,10 @@ def _build_layer(spec: LayerSpec) -> Tuple[Optional[QgsMapLayer], Optional[str]]
             return None, layer.error().summary() or "could not open"
         # The placement check against the catalog footprint (ensure_placed) runs later on the main
         # thread, once the layer has been added, so no coordinate transforms are built on workers.
-        if not layer.crs().isValid():
-            layer.setCrs(QgsCoordinateReferenceSystem(DEFAULT_CRS))
+        if not layer.crs().isValid() and spec.crs:
+            layer.setCrs(QgsCoordinateReferenceSystem(spec.crs))
         # Read the CRS's WKT now, while this thread's CRS object is alive: after the worker ends it can come
-        # back empty, which left a compound CRS broken and drew a Utah tile in Algeria (see _fresh_crs).
+        # back empty, which left a compound CRS broken and drew a tile in the wrong country (see _fresh_crs).
         layer.setCustomProperty(_WKT_PROPERTY, layer.crs().toWkt())
         if isinstance(layer, QgsRasterLayer) and spec.factory is None:
             layer.setCustomProperty(_EPSG_PROPERTY, _horizontal_epsg(spec.uri))
@@ -364,10 +370,10 @@ def _build_layer(spec: LayerSpec) -> Tuple[Optional[QgsMapLayer], Optional[str]]
 
 class AddLayersTask(QgsTask):
     """Build layers in parallel, then add them to the project (main thread) in the
-    "Ky STAC" group. `callback(added, failed)` where failed is a list of (name, error)."""
+    "STAC" group. `callback(added, failed)` where failed is a list of (name, error)."""
 
     def __init__(self, specs: List[LayerSpec], callback: Callable[[int, List[Tuple[str, str]]], None]):
-        super().__init__(f"Adding {len(specs)} Kentucky STAC layer{'s' if len(specs) != 1 else ''}")
+        super().__init__(f"Adding {len(specs)} STAC layer{'s' if len(specs) != 1 else ''}")
         self._specs = specs
         self._callback = callback
         self._built: List[Tuple[LayerSpec, Optional[QgsMapLayer], Optional[str]]] = []
@@ -417,7 +423,7 @@ class AddLayersTask(QgsTask):
             project.addMapLayer(layer, False)
             group.addLayer(layer)
             # QGIS can apply the project CRS to a layer as it is added; verify placement again.
-            ensure_placed(layer, spec.bbox)
+            ensure_placed(layer, spec.bbox, spec.crs)
             added += 1
         self._callback(added, failed)
 

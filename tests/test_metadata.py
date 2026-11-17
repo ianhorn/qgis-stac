@@ -7,7 +7,7 @@ ROOT = Path(__file__).resolve().parent.parent
 
 
 def _metadata():
-    return (ROOT / "kentucky_stac" / "metadata.txt").read_text(encoding="utf-8")
+    return (ROOT / "qgis_stac" / "metadata.txt").read_text(encoding="utf-8")
 
 
 def test_version_matches_pyproject():

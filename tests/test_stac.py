@@ -4,8 +4,8 @@ from urllib.parse import parse_qs, urlparse
 
 import pytest
 
-from kentucky_stac.stac import Asset, Item, SearchQuery, StacClient, StacError
-from kentucky_stac.stac.client import format_datetime_range
+from qgis_stac.stac import Asset, Item, SearchQuery, StacClient, StacError
+from qgis_stac.stac.client import format_datetime_range
 
 BASE = "https://example.test"
 
@@ -262,7 +262,7 @@ def test_filters_force_post_without_an_aoi():
 
 
 def test_query_variants_degrade_in_order():
-    from kentucky_stac.stac import query_variants
+    from qgis_stac.stac import query_variants
 
     plain = SearchQuery(collections=["c"])
     assert query_variants(plain) == [plain]
@@ -275,7 +275,7 @@ def test_query_variants_degrade_in_order():
 
 
 def test_within_cloud_only_rejects_tiles_that_report_too_much():
-    from kentucky_stac.stac import within_cloud
+    from qgis_stac.stac import within_cloud
 
     cloudy = Item(properties={"eo:cloud_cover": 80})
     clear = Item(properties={"eo:cloud_cover": 3.5})

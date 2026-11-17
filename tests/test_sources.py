@@ -1,7 +1,10 @@
-from kentucky_stac.catalog import is_lidar_collection, split_collections, thumbnail_href
-from kentucky_stac.sources import (
+from qgis_stac.catalog import is_lidar_collection, item_crs, split_collections, thumbnail_href
+from qgis_stac.sources import (
     BUILTIN_ENTRY,
+    DEFAULT_BASE_URI,
     DEFAULT_SOURCE,
+    KYFROMABOVE_BASE_URI,
+    KYFROMABOVE_ENTRY,
     ApiSource,
     add_source,
     deserialize_sources,
@@ -11,10 +14,8 @@ from kentucky_stac.sources import (
     parse_stac_index,
     serialize_sources,
     source_name,
-    tiler_for,
-    with_tiler_url,
 )
-from kentucky_stac.stac import DEFAULT_BASE_URI, Collection, Item
+from qgis_stac.stac import Collection, Item
 
 OTHER = "https://earth-search.aws.element84.com/v1"
 
@@ -35,18 +36,18 @@ def test_parse_stac_index_filters_like_the_addin():
         _entry("Private", "https://private.example/", isPrivate=True),
         _entry("Protected", "https://protected.example/", access="protected"),
         _entry("Not an API", "https://static.example/", isApi=False),
-        _entry("Kentucky duplicate", DEFAULT_BASE_URI + "/"),
+        _entry("KyFromAbove duplicate", KYFROMABOVE_BASE_URI + "/"),
         _entry("", "https://untitled.example/"),
         "garbage",
     ]
     entries = parse_stac_index(data)
     assert entries[0] == BUILTIN_ENTRY
-    assert [e.title for e in entries[1:]] == ["Alpha API", "Zeta API"]
-    assert entries[2].url == "https://zeta.example/stac"  # trailing slash trimmed
+    assert [e.title for e in entries[1:]] == ["Alpha API", "KyFromAbove", "Zeta API"]
+    assert entries[3].url == "https://zeta.example/stac"  # trailing slash trimmed
     assert entries[1].detail.endswith("...")  # long summary truncated
 
 
-def test_parse_stac_index_lists_kentucky_then_planetary_computer_then_the_rest():
+def test_parse_stac_index_lists_default_first_then_a_to_z_with_kyfromabove_in_place():
     data = [
         _entry("Alpha API", "https://alpha.example/v1"),
         _entry("Zeta API", "https://zeta.example/stac"),
@@ -55,19 +56,19 @@ def test_parse_stac_index_lists_kentucky_then_planetary_computer_then_the_rest()
     ]
     entries = parse_stac_index(data)
     assert entries[0] == BUILTIN_ENTRY
-    assert entries[1].title == "Microsoft Planetary Computer STAC API"
-    assert entries[1].url == "https://planetarycomputer.microsoft.com/api/stac/v1"
-    assert [e.title for e in entries[2:]] == ["Alpha API", "Earth Search", "Zeta API"]
+    # The index's own Planetary Computer entry is the default, listed once at the top.
+    assert [e.title for e in entries[1:]] == ["Alpha API", "Earth Search", "KyFromAbove", "Zeta API"]
+    assert entries[2].url == OTHER
 
 
-def test_parse_stac_index_without_planetary_computer_is_just_kentucky_then_a_to_z():
+def test_parse_stac_index_lists_default_then_a_to_z():
     entries = parse_stac_index([_entry("Zeta API", "https://zeta.example/stac"), _entry("Alpha API", "https://alpha.example/v1")])
-    assert [e.title for e in entries[1:]] == ["Alpha API", "Zeta API"]
+    assert [e.title for e in entries[1:]] == ["Alpha API", "KyFromAbove", "Zeta API"]
 
 
-def test_parse_stac_index_on_bad_data_still_offers_kentucky():
-    assert parse_stac_index(None) == [BUILTIN_ENTRY]
-    assert parse_stac_index({"not": "a list"}) == [BUILTIN_ENTRY]
+def test_parse_stac_index_on_bad_data_still_offers_default_and_kentucky():
+    assert parse_stac_index(None) == [BUILTIN_ENTRY, KYFROMABOVE_ENTRY]
+    assert parse_stac_index({"not": "a list"}) == [BUILTIN_ENTRY, KYFROMABOVE_ENTRY]
 
 
 def test_url_checks():
@@ -75,7 +76,8 @@ def test_url_checks():
     assert not is_valid_api_url("ftp://a.example")
     assert not is_valid_api_url("not a url")
     assert not is_usable_base_url("https://a.example/catalog.JSON")
-    assert is_default_uri("") and is_default_uri(DEFAULT_BASE_URI + "/") and not is_default_uri(OTHER)
+    assert is_default_uri(DEFAULT_BASE_URI + "/") and is_default_uri("") and not is_default_uri(OTHER)
+    assert not is_default_uri(KYFROMABOVE_BASE_URI)
 
 
 def test_sources_round_trip_and_default_fallback():
@@ -95,7 +97,7 @@ def test_add_and_replace_sources():
     assert added == [DEFAULT_SOURCE, ApiSource("Earth Search", OTHER)]
     assert add_source(added, "dup", OTHER, replace=False) == added  # already active
     assert add_source(added, "Earth Search", OTHER, replace=True) == [ApiSource("Earth Search", OTHER)]
-    # Picking Kentucky's URL is the way back, as the built-in source itself.
+    # Picking the default catalog's URL is the way back, as the built-in source itself.
     assert add_source([ApiSource("ES", OTHER)], "whatever", DEFAULT_BASE_URI, replace=True) == [DEFAULT_SOURCE]
     assert add_source([DEFAULT_SOURCE], "", OTHER, replace=False)[1].name == OTHER  # blank name -> URL
     assert source_name(added, OTHER) == "Earth Search"
@@ -110,50 +112,39 @@ def test_lidar_detection_for_other_sources():
     assert is_lidar_collection(c(item_asset_keys=["copc"]))
     # A LiDAR-derived DEM is a raster -- "lidar" alone isn't enough.
     assert not is_lidar_collection(c(keywords=["LiDAR", "DEM"]))
-    # Another API's "laz-..." id means nothing; only the built-in catalog uses that naming.
-    assert not is_lidar_collection(c(id="laz-thing"))
-    assert is_lidar_collection(Collection(id="laz-phase3"))
+    # Conventional ids count too.
+    assert is_lidar_collection(c(id="laz-thing"))
+    assert is_lidar_collection(c(id="3dep-lidar-copc"))
+    assert not is_lidar_collection(c(id="3dep-lidar-hag"))
 
 
-def test_split_puts_builtin_first_then_other_sources():
+def test_split_puts_default_first_then_other_sources():
     cols = [Collection(id="b", source=OTHER), Collection(id="z"), Collection(id="a")]
     imagery, _ = split_collections(cols)
     assert [(x.id, x.source) for x in imagery] == [("a", ""), ("z", ""), ("b", OTHER)]
 
 
-def test_other_sources_are_listed_on_both_tabs():
+def test_each_collection_goes_to_one_tab_by_kind():
     cols = [Collection(id="laz-phase3"), Collection(id="dem-phase2"), Collection(id="x", source=OTHER)]
     imagery, lidar = split_collections(cols)
     assert [c.id for c in imagery] == ["dem-phase2", "x"]
-    assert [c.id for c in lidar] == ["laz-phase3", "x"]
+    assert [c.id for c in lidar] == ["laz-phase3"]
 
 
-def test_lidar_thumbnail_fallback_is_kentucky_only():
-    ky = Item(id="t", collection="laz-phase3")
-    other = Item(id="t", collection="laz-phase3", source=OTHER)
-    assert thumbnail_href(ky, lidar=True) is not None
-    assert thumbnail_href(other, lidar=True) is None
+def test_thumbnail_is_only_the_items_own_asset():
+    item = Item(id="t", collection="laz-phase3", source=OTHER)
+    assert thumbnail_href(item, lidar=True) is None
+    assert item_crs(Item(properties={"proj:epsg": 3089})) == "EPSG:3089"
+    assert item_crs(Item(properties={})) == ""
+    assert item_crs(Item(properties={"proj:epsg": "junk"})) == ""
 
 
-def test_tiler_url_persists_and_is_validated():
-    tiler = "https://titiler.example.com"
-    src = ApiSource("ES", OTHER, tiler_url=tiler)
-    assert deserialize_sources(serialize_sources([DEFAULT_SOURCE, src])) == [DEFAULT_SOURCE, src]
-    # Older saved lists (no tiler_url) and junk values load as "no tile server".
-    assert deserialize_sources('[{"name": "ES", "base_uri": "%s"}]' % OTHER)[0].tiler_url == ""
-    assert deserialize_sources('[{"name": "ES", "base_uri": "%s", "tiler_url": "nonsense"}]' % OTHER)[0].tiler_url == ""
-
-
-def test_add_source_with_tiler_and_with_tiler_url():
-    added = add_source([DEFAULT_SOURCE], "ES", OTHER, replace=False, tiler_url="https://t.example/")
-    assert added[1].tiler_url == "https://t.example"
-    assert add_source([DEFAULT_SOURCE], "ES", OTHER, replace=False, tiler_url="bad")[1].tiler_url == ""
-    changed = with_tiler_url(added, OTHER + "/", "https://other.example")
-    assert changed[1].tiler_url == "https://other.example" and changed[0] == DEFAULT_SOURCE
-    assert tiler_for(changed, OTHER) == "https://other.example" and tiler_for(changed, DEFAULT_BASE_URI) == ""
-    assert with_tiler_url(changed, OTHER, "")[1].tiler_url == ""
-    # The built-in source never takes a tile server override.
-    assert with_tiler_url([DEFAULT_SOURCE], DEFAULT_BASE_URI, "https://x.example") == [DEFAULT_SOURCE]
+def test_saved_per_source_tile_servers_from_older_versions_are_ignored():
+    """The tile server is one global setting now (server_layers.tiler_url): a saved per-source
+    "tiler_url" is dropped on load, not carried along."""
+    old = '[{"name": "ES", "base_uri": "%s", "tiler_url": "https://titiler.example.com"}]' % OTHER
+    assert deserialize_sources(old) == [ApiSource("ES", OTHER)]
+    assert "tiler_url" not in serialize_sources([ApiSource("ES", OTHER)])
 
 
 def test_data_asset_key():
@@ -162,7 +153,7 @@ def test_data_asset_key():
 
 
 def test_item_json_text_and_html():
-    from kentucky_stac.item_json import item_json_text, json_to_html
+    from qgis_stac.item_json import item_json_text, json_to_html
 
     raw = {"id": "t1", "properties": {"note": "a <b> & c"}, "assets": {"data": {"href": "https://x.example/a.tif?sig=1&b=2"}}}
     item = Item.from_dict(raw)
@@ -175,7 +166,7 @@ def test_item_json_text_and_html():
 
 
 def test_auth_cfg_is_saved_cleaned_and_looked_up():
-    from kentucky_stac.sources import (
+    from qgis_stac.sources import (
         ApiSource,
         auth_cfg_for,
         deserialize_sources,
@@ -191,7 +182,7 @@ def test_auth_cfg_is_saved_cleaned_and_looked_up():
     assert [s.auth_cfg for s in deserialize_sources(text) if not s.is_default] == [""]
     assert auth_cfg_for([src], OTHER + "/") == "abc1234" and auth_cfg_for([src], "https://elsewhere.org") == ""
     cleared = with_auth_cfg([src], OTHER, "")
-    assert cleared[0].auth_cfg == "" and with_auth_cfg([DEFAULT_SOURCE], DEFAULT_SOURCE.base_uri, "x1")[0].auth_cfg == ""
+    assert cleared[0].auth_cfg == "" and with_auth_cfg([DEFAULT_SOURCE], DEFAULT_BASE_URI, "x1")[0].auth_cfg == ""
 
 
 def test_add_source_takes_a_login():

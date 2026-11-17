@@ -96,7 +96,7 @@ def _crs_text(layer: QgsRasterLayer, item: Item) -> str:
 
 
 def _vrt_directory() -> str:
-    path = os.path.join(QgsApplication.qgisSettingsDirPath(), "kentucky_stac", "vrt")
+    path = os.path.join(QgsApplication.qgisSettingsDirPath(), "qgis_stac", "vrt")
     os.makedirs(path, exist_ok=True)
     return path
 

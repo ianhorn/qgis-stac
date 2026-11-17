@@ -17,7 +17,7 @@ from qgis.core import (
 from .catalog import bbox_2d, format_size, primary_asset
 from .stac import Item
 
-KIND_PROPERTY = "kentucky_stac/results_kind"
+KIND_PROPERTY = "qgis_stac/results_kind"
 
 
 def geojson_to_geometry(geometry: Optional[Dict[str, Any]], bbox: Optional[Sequence[float]] = None) -> Optional[QgsGeometry]:

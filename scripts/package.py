@@ -2,7 +2,7 @@
 
     python scripts/package.py [--out-dir dist] [--notes release-notes.md]
 
-The zip holds the `kentucky_stac/` folder as its single top-level entry. `--notes` also writes the newest
+The zip holds the `qgis_stac/` folder as its single top-level entry. `--notes` also writes the newest
 changelog entry from metadata.txt, for use as GitHub release notes. Stdlib only.
 """
 
@@ -14,7 +14,7 @@ import zipfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-PLUGIN_DIR = ROOT / "kentucky_stac"
+PLUGIN_DIR = ROOT / "qgis_stac"
 SKIP_DIRS = {"__pycache__"}
 SKIP_SUFFIXES = {".pyc", ".pyo"}
 SKIP_NAMES = {".DS_Store", "Thumbs.db"}
@@ -51,10 +51,10 @@ def plugin_files():
 
 def build_zip(out_dir: Path) -> Path:
     out_dir.mkdir(parents=True, exist_ok=True)
-    target = out_dir / f"kentucky_stac-{plugin_version()}.zip"
+    target = out_dir / f"qgis_stac-{plugin_version()}.zip"
     with zipfile.ZipFile(target, "w", zipfile.ZIP_DEFLATED) as archive:
         for path in plugin_files():
-            name = (Path("kentucky_stac") / path.relative_to(PLUGIN_DIR)).as_posix()
+            name = (Path("qgis_stac") / path.relative_to(PLUGIN_DIR)).as_posix()
             data = path.read_bytes()
             if b"\0" not in data:
                 data = data.replace(b"\r\n", b"\n")  # one line ending whatever the checkout (Windows adds CRLF)

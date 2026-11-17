@@ -42,7 +42,7 @@ def _style(band: QgsRubberBand) -> QgsRubberBand:
 
 def _notify(message_bar, text: str, level=None):
     if message_bar is not None:
-        message_bar.pushMessage("Kentucky STAC", text, level=level or Qgis.MessageLevel.Info, duration=6)
+        message_bar.pushMessage("STAC", text, level=level or Qgis.MessageLevel.Info, duration=6)
 
 
 class DrawAoiTool(QgsMapTool):

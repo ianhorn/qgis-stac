@@ -5,8 +5,8 @@ import pytest
 
 pytest.importorskip("qgis.core", reason="needs QGIS (qgis.core)")
 
-from kentucky_stac import diagnostics, signing  # noqa: E402
-from kentucky_stac.stac import StacError  # noqa: E402
+from qgis_stac import diagnostics, signing  # noqa: E402
+from qgis_stac.stac import StacError  # noqa: E402
 
 
 @pytest.fixture(autouse=True)
@@ -24,7 +24,7 @@ def test_log_exception_writes_the_traceback(monkeypatch):
     except ValueError:
         diagnostics.log_exception("Could not do the thing")
     message, tag, _level = logged[0]
-    assert tag == "Kentucky STAC"
+    assert tag == "STAC"
     assert "Could not do the thing" in message and "ValueError: boom" in message
 
 

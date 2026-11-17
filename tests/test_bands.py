@@ -1,6 +1,6 @@
 import pytest
 
-from kentucky_stac.bands import (
+from qgis_stac.bands import (
     available_combinations,
     available_indices,
     check_formula,
@@ -9,7 +9,7 @@ from kentucky_stac.bands import (
     item_bands,
     to_expression,
 )
-from kentucky_stac.stac import Item
+from qgis_stac.stac import Item
 
 LANDSAT = {  # Astraea-style: common name at asset level, key nir08
     "id": "LC08",

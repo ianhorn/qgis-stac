@@ -24,13 +24,13 @@ from .stac import Collection
 from .tasks import CollectionsTask
 from .theme import checkbox_style
 
-SOURCES_SETTINGS_KEY = "kentucky_stac/api_sources"
+SOURCES_SETTINGS_KEY = "qgis_stac/api_sources"
 
 
-class KentuckyStacDock(QDockWidget):
+class StacDock(QDockWidget):
     def __init__(self, iface, parent=None):
-        super().__init__("Kentucky STAC", parent)
-        self.setObjectName("KentuckyStacDock")
+        super().__init__("STAC", parent)
+        self.setObjectName("StacDock")
         self.iface = iface
         self.sources: List[ApiSource] = deserialize_sources(QgsSettings().value(SOURCES_SETTINGS_KEY, ""))
         auth.set_sources(self.sources)
@@ -40,7 +40,7 @@ class KentuckyStacDock(QDockWidget):
         self.aoi_state = AoiState(self)
         self.aoi_bar = AoiBar(iface.mapCanvas(), self.aoi_state, iface.messageBar())
 
-        # Which STAC API(s) are searched -- the built-in KyFromAbove catalog by default, plus any
+        # Which STAC API(s) are searched -- Microsoft Planetary Computer by default, plus any
         # "bring your own" API (see sources_dialog.py). One compact row, since dock space is tight.
         self.sources_label = QLabel()
         self.sources_label.setWordWrap(True)
@@ -52,7 +52,7 @@ class KentuckyStacDock(QDockWidget):
         self.feedback_button.setToolTip("Report a bug, request a feature, or send feedback directly.")
         self.feedback_button.clicked.connect(lambda: FeedbackDialog(self).exec())
         self.help_button = QPushButton("Help")
-        self.help_button.setToolTip("Open the Kentucky STAC documentation site.")
+        self.help_button.setToolTip("Open the STAC documentation site.")
         self.help_button.clicked.connect(lambda: open_help(self))
         sources_row = QHBoxLayout()
         sources_row.addWidget(self.sources_label, 1)
@@ -62,7 +62,7 @@ class KentuckyStacDock(QDockWidget):
 
         bar = iface.messageBar()
         canvas = iface.mapCanvas()
-        self.imagery_tab = SearchTab("imagery and DEM", "imagery", False, self.aoi_state, bar, canvas=canvas)
+        self.imagery_tab = SearchTab("rasters", "imagery", False, self.aoi_state, bar, canvas=canvas)
         self.lidar_tab = SearchTab("point cloud", "lidar", True, self.aoi_state, bar, canvas=canvas)
         for tab in (self.imagery_tab, self.lidar_tab):
             tab.reload_requested.connect(self.load_collections)
@@ -70,8 +70,8 @@ class KentuckyStacDock(QDockWidget):
             tab.set_sources(self.sources)
 
         self.tabs = QTabWidget()
-        self.tabs.addTab(self.imagery_tab, "Imagery / DEM")
-        self.tabs.addTab(self.lidar_tab, "LiDAR Pointcloud")
+        self.tabs.addTab(self.imagery_tab, "Raster")
+        self.tabs.addTab(self.lidar_tab, "Point Cloud")
 
         content = QWidget()
         content.setStyleSheet(checkbox_style())  # check boxes that stay visible in dark themes
@@ -81,7 +81,6 @@ class KentuckyStacDock(QDockWidget):
         layout.addWidget(self.tabs, 1)
         self.setWidget(content)
         self._update_sources_label()
-        self._name_tabs()
 
     def showEvent(self, event):
         super().showEvent(event)
@@ -90,17 +89,6 @@ class KentuckyStacDock(QDockWidget):
             self.load_collections()
 
     # ---- tabs ------------------------------------------------------------------------------
-
-    def _mixed(self) -> bool:
-        """Whether a source other than the built-in KyFromAbove catalog is active."""
-        return any(not s.is_default for s in self.sources)
-
-    def _name_tabs(self):
-        """KyFromAbove's own tabs are Imagery / DEM and LiDAR Pointcloud; another API's collections are
-        simply rasters and point clouds."""
-        raster, cloud = ("Raster", "Point Cloud") if self._mixed() else ("Imagery / DEM", "LiDAR Pointcloud")
-        self.tabs.setTabText(self.tabs.indexOf(self.imagery_tab), raster)
-        self.tabs.setTabText(self.tabs.indexOf(self.lidar_tab), cloud)
 
     # ---- sources ---------------------------------------------------------------------------
 
@@ -126,7 +114,6 @@ class KentuckyStacDock(QDockWidget):
         self._update_sources_label()
         for tab in (self.imagery_tab, self.lidar_tab):
             tab.set_sources(self.sources)
-        self._name_tabs()
         if reload:
             self.load_collections()
 
@@ -147,7 +134,7 @@ class KentuckyStacDock(QDockWidget):
         if errors:
             detail = "; ".join(f"{name}: {msg}" for name, msg in errors)
             self.iface.messageBar().pushMessage(
-                "Kentucky STAC", f"Could not load collections from {detail}", level=Qgis.MessageLevel.Warning
+                "STAC", f"Could not load collections from {detail}", level=Qgis.MessageLevel.Warning
             )
         if not collections and errors:
             message = "; ".join(f"{name}: {msg}" for name, msg in errors)

@@ -1,5 +1,5 @@
 """Backs the Feedback dialog's two paths, ported from the ArcGIS Pro add-ins (kylidar-addin /
-kyfromabove-ext FeedbackService):
+stac-arcgispro-addin FeedbackService):
 
   - github_issue_url: a pre-filled "new issue" link opened in the browser. Needs a GitHub account
     (GitHub has no anonymous issue submission).
@@ -20,15 +20,15 @@ import urllib.parse
 from typing import Any, Dict, Optional
 
 FORMSPREE_ENDPOINT = "https://formspree.io/f/mqpavodn"
-DOCS_SITE_URL = "https://ianhorn.github.io/kentucky-stac/"
-REPO_URL = "https://github.com/ianhorn/kentucky-stac"
-SUBJECT = "Kentucky STAC (QGIS plugin) feedback"
+DOCS_SITE_URL = "https://ianhorn.github.io/qgis-stac/"
+REPO_URL = "https://github.com/ianhorn/qgis-stac"
+SUBJECT = "STAC (QGIS plugin) feedback"
 
 
 def environment_summary(plugin_version: str, qgis_version: Optional[str], os_description: Optional[str]) -> str:
-    """"Kentucky STAC 0.1.0 | QGIS 3.44.4-Solothurn | Windows-11-10.0.26200" -- a part that couldn't be
+    """"STAC 0.1.0 | QGIS 3.44.4-Solothurn | Windows-11-10.0.26200" -- a part that couldn't be
     determined is left out rather than failing the whole summary."""
-    parts = [f"Kentucky STAC {plugin_version or 'unknown'}"]
+    parts = [f"STAC {plugin_version or 'unknown'}"]
     if qgis_version:
         parts.append(f"QGIS {qgis_version}")
     if os_description:

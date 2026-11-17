@@ -1,0 +1,16 @@
+[general]
+name=STAC
+qgisMinimumVersion=3.34
+qgisMaximumVersion=4.99
+description=Search, load and download imagery, elevation and LiDAR from STAC APIs (Planetary Computer by default).
+about=Search STAC APIs (public APIs from STAC Index, or any URL) for imagery, DEM and LiDAR tiles within an area of interest. Add tiles to the map by streaming COG/COPC files, download them, combine them into GDAL VRT mosaics, MosaicJSON, titiler server mosaics or Virtual Point Clouds, clip them to your area of interest, or export a notebook/Python/R/shell script that downloads them. Requires PDAL (included with QGIS from OSGeo4W) on PATH for LiDAR clipping and virtual point cloud options; everything else uses QGIS's bundled Python, GDAL and network stack.
+version=0.1.0
+author=Ian Horn
+email=ianhorn17@gmail.com
+tracker=https://github.com/ianhorn/qgis-stac/issues
+repository=https://github.com/ianhorn/qgis-stac
+homepage=https://ianhorn.github.io/qgis-stac/
+license=GPL-2.0-or-later
+icon=icon.svg
+tags=stac,lidar,copc,imagery,dem
+changelog=0.1.0 - First release of the generic STAC plugin: Microsoft Planetary Computer is the built-in catalog and any other STAC API can be added from STAC Index or by URL. Search an area of interest, stream or download tiles, build mosaics and virtual point clouds, and export a notebook, Python, R or shell script.

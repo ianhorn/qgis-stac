@@ -63,7 +63,7 @@ def fetch(tile):
     if os.path.exists(path):
         return name, "already there"
     part = path + ".part"
-    request = urllib.request.Request(sign(url), headers={"User-Agent": "kentucky-stac-export"})
+    request = urllib.request.Request(sign(url), headers={"User-Agent": "qgis-stac-export"})
     with urllib.request.urlopen(request) as response, open(part, "wb") as out:
         shutil.copyfileobj(response, out, 1 << 20)
     os.replace(part, path)
@@ -98,7 +98,7 @@ def entries_for(pairs: Iterable[Entry]) -> List[Entry]:
 
 
 def _header(entries: List[Entry]) -> str:
-    return f"Downloads {len(entries)} tile{'s' if len(entries) != 1 else ''} chosen in the Kentucky STAC QGIS plugin ({datetime.now():%Y-%m-%d})."
+    return f"Downloads {len(entries)} tile{'s' if len(entries) != 1 else ''} chosen in the STAC QGIS plugin ({datetime.now():%Y-%m-%d})."
 
 
 def python_script(entries: List[Entry]) -> str:
@@ -123,7 +123,7 @@ def notebook(entries: List[Entry]) -> str:
         return base if kind == "markdown" else {**base, "execution_count": None, "outputs": []}
 
     cells = [
-        cell("markdown", f"# Kentucky STAC tiles\n\n{_header(entries)} Run the cells in order; standard library only."),
+        cell("markdown", f"# STAC tiles\n\n{_header(entries)} Run the cells in order; standard library only."),
         cell("code", _PY_CONFIG),
         cell("code", _PY_TILES.replace("@ENTRIES@", _entries_literal(entries))),
         cell("code", _PY_HELPERS),

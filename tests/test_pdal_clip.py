@@ -5,7 +5,7 @@ import json
 
 import pytest
 
-pdal_clip = pytest.importorskip("kentucky_stac.pdal_clip", reason="needs QGIS (qgis.core)")
+pdal_clip = pytest.importorskip("qgis_stac.pdal_clip", reason="needs QGIS (qgis.core)")
 
 POLYGON = "POLYGON((0 0,1 0,1 1,0 0))"
 

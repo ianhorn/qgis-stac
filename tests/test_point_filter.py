@@ -1,4 +1,4 @@
-from kentucky_stac.point_filter import ALL_CLASSES, PRESETS, PointFilter
+from qgis_stac.point_filter import ALL_CLASSES, PRESETS, PointFilter
 
 
 def test_default_keeps_everything():

@@ -80,14 +80,7 @@ from .pdal_clip import CropPointCloudsTask, clipped_path, filtered_path, pdal_av
 from .point_filter import PointFilter
 from .point_filter_panel import PointFilterPanel
 from .results_layer import select_results, show_results
-from .server_layers import (
-    RegisterMosaicsTask,
-    add_cog_layers,
-    add_search_layer,
-    plan_server_mosaics,
-    tiler_url,
-)
-from .sources import DEFAULT_SOURCE, ApiSource, is_default_uri, source_name, tiler_for
+from .sources import DEFAULT_SOURCE, ApiSource, is_default_uri, source_name
 from .stac import Collection, Item, SearchQuery
 from .tasks import PAGE_SIZE, SearchTask
 from .vpc import build_vpc
@@ -134,11 +127,10 @@ class WrapButton(QPushButton):
 def _projection_label(item: Item) -> Optional[str]:
     """A short EPSG-code label from the item's own STAC properties, to save space in the results
     list -- plain "EPSG:N" for imagery/DEM (a single proj:epsg), or "EPSG:horizontal/EPSG:vertical"
-    for a LiDAR item's compound CRS. LiDAR items carry no proj:epsg at all (confirmed live: every
-    laz-phaseN item's properties have proj:wkt2 only) -- GDAL's osr resolves that compound WKT's
-    horizontal (PROJCS) and vertical (VERT_CS) authority codes separately (verified live:
-    EPSG:6473/EPSG:6360 for NAD83(2011) KY Single Zone + NAVD88 height), which QGIS's own CRS class
-    can't do (a compound CRS's authid() comes back empty)."""
+    for a LiDAR item's compound CRS. Some LiDAR items carry no proj:epsg at all, only proj:wkt2 --
+    GDAL's osr resolves that compound WKT's horizontal (PROJCS) and vertical (VERT_CS) authority codes
+    separately (e.g. EPSG:6473/EPSG:6360 for a state plane CRS plus NAVD88 height), which QGIS's own
+    CRS class can't do (a compound CRS's authid() comes back empty)."""
     epsg = item.properties.get("proj:epsg")
     if epsg:
         return f"EPSG:{epsg}"
@@ -270,14 +262,12 @@ class SearchTab(QWidget):
         self._lidar = lidar
         self._sources: List[ApiSource] = [DEFAULT_SOURCE]
         self._collections: List[Collection] = []  # the checklist's rows, in order
-        self._server_mosaic_note = ""
         self._aoi = aoi_state
         self._bar = message_bar
         self._task: Optional[SearchTask] = None
         self._add_task: Optional[AddLayersTask] = None
         self._size_task: Optional[SizesTask] = None
         self._mosaic_task: Optional[BuildMosaicsTask] = None
-        self._register_task: Optional[RegisterMosaicsTask] = None
         self._vpc_task = None  # QGIS's Build virtual point cloud algorithm, when options were chosen
         self._vpc_options = VpcOptions()  # chosen when a download that will combine into a VPC starts
         self._download: Optional[DownloadManager] = None
@@ -410,20 +400,6 @@ class SearchTab(QWidget):
             )
             self.mosaicjson_button.setEnabled(False)
             self.mosaicjson_button.clicked.connect(self.export_mosaicjson)
-        # Registers a search restricted to the selected tiles' ids and streams that as an XYZ
-        # layer -- a precise crop instead of the whole-state streaming layer, with no download and
-        # no local stitching. Same raster-only restriction as the VRT mosaic.
-        self.server_mosaic_button: Optional[QPushButton] = None
-        if not lidar:
-            self.server_mosaic_button = WrapButton("Add as server mosaic")
-            self._server_mosaic_tip = (
-                "Register the selected tiles as a mosaic on the tile server and stream it "
-                "(one mosaic per collection). For another API this needs your own titiler: "
-                "set it under Sources... > Tile server..."
-            )
-            self.server_mosaic_button.setToolTip(self._server_mosaic_tip)
-            self.server_mosaic_button.setEnabled(False)
-            self.server_mosaic_button.clicked.connect(self.add_server_mosaic)
         # A script (notebook, Python, R or shell) that downloads the selected tiles outside QGIS.
         self.script_button = WrapButton("Export as script...")
         self.script_button.setToolTip("Save a notebook, Python script, R script or shell script that downloads the selected tiles")
@@ -437,14 +413,14 @@ class SearchTab(QWidget):
         self.concurrency_spin = QSpinBox()
         self.concurrency_spin.setRange(MIN_DOWNLOAD_CONCURRENCY, MAX_DOWNLOAD_CONCURRENCY)
         self.concurrency_spin.setValue(
-            int(QgsSettings().value("kentucky_stac/download_concurrency", default_concurrency()))
+            int(QgsSettings().value("qgis_stac/download_concurrency", default_concurrency()))
         )
         self.concurrency_spin.setToolTip(
             "How many files download at the same time. Higher can be faster, but may get throttled "
             "by the server or saturate your connection."
         )
         self.concurrency_spin.valueChanged.connect(
-            lambda value: QgsSettings().setValue("kentucky_stac/download_concurrency", value)
+            lambda value: QgsSettings().setValue("qgis_stac/download_concurrency", value)
         )
         # Crops to the AOI's actual shape rather than the tiles' full rectangular extent -- a GDAL
         # warp cutline for a raster mosaic, PDAL filters.crop (see pdal_clip.py) for downloaded point
@@ -505,11 +481,8 @@ class SearchTab(QWidget):
             if self.mosaicjson_button is not None:
                 export_row.addWidget(self.mosaicjson_button, 1)
             layout.addLayout(export_row)
-        if self.server_mosaic_button is not None:
-            server_row = QHBoxLayout()
-            server_row.addWidget(self.server_mosaic_button, 1)
-            server_row.addWidget(self.script_button, 1)
-            layout.addLayout(server_row)
+        if self.mosaic_button is not None:  # the raster tab; the point cloud tab puts the script button beside VPC
+            layout.addWidget(self.script_button)
         concurrency_row = QHBoxLayout()
         concurrency_row.addWidget(self.concurrency_label)
         concurrency_row.addWidget(self.concurrency_spin)
@@ -549,10 +522,6 @@ class SearchTab(QWidget):
     def set_sources(self, sources: List[ApiSource]):
         self._sources = list(sources)
         self._update_add_enabled()  # a tile server may have just been set (or cleared) for a source
-
-    def _can_server_mosaic(self, item: Item) -> bool:
-        """KyFromAbove's tiles always can; another source's only once the user has set a tile server for it."""
-        return is_default_uri(item.source) or bool(tiler_for(self._sources, item.source))
 
     def _source_label(self, base_uri: str) -> str:
         """A source's display name, or "" for the built-in catalog (left unlabeled, as before)."""
@@ -758,7 +727,7 @@ class SearchTab(QWidget):
 
         try:
             self._fids = show_results(
-                self._kind, f"Ky STAC results ({self._what})", self._items, self._lidar
+                self._kind, f"STAC results ({self._what})", self._items, self._lidar
             )
         except Exception as e:  # noqa: BLE001 - a UI action reports any failure to the user instead of raising into Qt
             self._fids = [None] * len(self._items)
@@ -966,11 +935,11 @@ class SearchTab(QWidget):
             self._warn("Wait for the current task to finish first.")
             return
         settings = QgsSettings()
-        start = os.path.join(str(settings.value("kentucky_stac/download_dir", "") or ""), filename_from_href(href))
+        start = os.path.join(str(settings.value("qgis_stac/download_dir", "") or ""), filename_from_href(href))
         path, _ = QFileDialog.getSaveFileName(self, f"Save asset '{key}' of {item.id}", start)
         if not path:
             return
-        settings.setValue("kentucky_stac/download_dir", os.path.dirname(path))
+        settings.setValue("qgis_stac/download_dir", os.path.dirname(path))
         try:
             if os.path.exists(path):
                 os.remove(path)  # the save dialog already asked about overwriting
@@ -1073,7 +1042,6 @@ class SearchTab(QWidget):
                 self._add_task,
                 self._size_task,
                 self._mosaic_task,
-                self._register_task,
                 self._download,
                 self._clip_task,
                 self._vpc_task,
@@ -1090,23 +1058,7 @@ class SearchTab(QWidget):
             self.mosaic_button.setEnabled(enabled)
         if self.mosaicjson_button is not None:
             self.mosaicjson_button.setEnabled(enabled)
-        if self.server_mosaic_button is not None:
-            self._update_server_mosaic_button(enabled)
         self.script_button.setEnabled(enabled)
-
-    def _update_server_mosaic_button(self, enabled: bool):
-        """Gray out "Add as server mosaic" unless at least one selected tile can be served: KyFromAbove's
-        can, another API's only with a titiler of the user's own (Sources... > Tile server...)."""
-        items = self.selected_items() if enabled else []
-        usable = any(self._can_server_mosaic(i) for i in items)
-        self.server_mosaic_button.setEnabled(enabled and usable)
-        missing = sorted({source_name(self._sources, i.source) for i in items if not self._can_server_mosaic(i)})
-        if enabled and not usable and missing:
-            self.server_mosaic_button.setToolTip(
-                f"Needs a titiler of your own for {', '.join(missing)}: enter its URL under Sources... > Tile server..."
-            )
-        else:
-            self.server_mosaic_button.setToolTip(self._server_mosaic_tip)
 
     # ---- add to map -----------------------------------------------------------------------
 
@@ -1228,11 +1180,11 @@ class SearchTab(QWidget):
             return
         settings = QgsSettings()
         folder = QFileDialog.getExistingDirectory(
-            self, "Download and filter tiles in", str(settings.value("kentucky_stac/download_dir", "") or "")
+            self, "Download and filter tiles in", str(settings.value("qgis_stac/download_dir", "") or "")
         )
         if not folder:
             return
-        settings.setValue("kentucky_stac/download_dir", folder)
+        settings.setValue("qgis_stac/download_dir", folder)
         self._vpc_options = VpcOptions()
         self._download_filter = point_filter
         self._force_add_when_done = True
@@ -1263,13 +1215,13 @@ class SearchTab(QWidget):
         options = VpcOptions()
         settings = QgsSettings()
         folder = QFileDialog.getExistingDirectory(
-            self, "Save the virtual point cloud (.vpc) to", str(settings.value("kentucky_stac/vpc_dir", "") or "")
+            self, "Save the virtual point cloud (.vpc) to", str(settings.value("qgis_stac/vpc_dir", "") or "")
         )
         if not folder:
             return
-        settings.setValue("kentucky_stac/vpc_dir", folder)
+        settings.setValue("qgis_stac/vpc_dir", folder)
 
-        vpc_path = os.path.join(folder, f"kentucky_stac_pointcloud_{datetime.now().strftime('%H%M%S')}.vpc")
+        vpc_path = os.path.join(folder, f"qgis_stac_pointcloud_{datetime.now().strftime('%H%M%S')}.vpc")
         notes = [f"streamed directly (no download), saved to {os.path.basename(vpc_path)}"]
         if skipped:
             notes.append(f"{skipped} tile{'s' if skipped != 1 else ''} plain LAZ/LAS, which QGIS can't stream; left out")
@@ -1285,9 +1237,9 @@ class SearchTab(QWidget):
             if count < 2:
                 self._warn("Could not build a combined virtual point cloud (missing tile footprints); nothing added.")
                 return
-            self._run_add([LayerSpec(f"Ky STAC point cloud ({count} tiles)", vpc_path, "vpc", bbox)], notes)
+            self._run_add([LayerSpec(f"STAC point cloud ({count} tiles)", vpc_path, "vpc", bbox)], notes)
             return
-        spec = LayerSpec(f"Ky STAC point cloud ({len(entries)} tiles)", vpc_path, "vpc", bbox)
+        spec = LayerSpec(f"STAC point cloud ({len(entries)} tiles)", vpc_path, "vpc", bbox)
         self.results_status.setText("Building the virtual point cloud (reading every point)...")
         self._vpc_task = start_build(
             [e[1] for e in entries], vpc_path, options, lambda ok, message: self._on_vpc_built(ok, message, spec, notes)
@@ -1314,11 +1266,11 @@ class SearchTab(QWidget):
             return
         settings = QgsSettings()
         folder = QFileDialog.getExistingDirectory(
-            self, "Save the mosaic (.vrt) to", str(settings.value("kentucky_stac/mosaic_dir", "") or "")
+            self, "Save the mosaic (.vrt) to", str(settings.value("qgis_stac/mosaic_dir", "") or "")
         )
         if not folder:
             return
-        settings.setValue("kentucky_stac/mosaic_dir", folder)
+        settings.setValue("qgis_stac/mosaic_dir", folder)
         self.start_mosaic(items, folder)
 
     def start_mosaic(self, items: List[Item], folder: str):
@@ -1378,11 +1330,11 @@ class SearchTab(QWidget):
         kind = chosen.data()
         _label, ext, file_filter = scripts.KINDS[kind]
         settings = QgsSettings()
-        start = os.path.join(str(settings.value("kentucky_stac/script_dir", "") or ""), "download_tiles" + ext)
+        start = os.path.join(str(settings.value("qgis_stac/script_dir", "") or ""), "download_tiles" + ext)
         path, _ = QFileDialog.getSaveFileName(self, "Save the script", start, file_filter)
         if not path:
             return
-        settings.setValue("kentucky_stac/script_dir", os.path.dirname(path))
+        settings.setValue("qgis_stac/script_dir", os.path.dirname(path))
         entries = scripts.entries_for((os.path.basename(j.dest), j.url) for j in jobs)
         try:
             with open(path, "w", encoding="utf-8", newline="\n") as f:
@@ -1409,11 +1361,11 @@ class SearchTab(QWidget):
             return
         settings = QgsSettings()
         folder = QFileDialog.getExistingDirectory(
-            self, "Save the MosaicJSON to", str(settings.value("kentucky_stac/mosaicjson_dir", "") or "")
+            self, "Save the MosaicJSON to", str(settings.value("qgis_stac/mosaicjson_dir", "") or "")
         )
         if not folder:
             return
-        settings.setValue("kentucky_stac/mosaicjson_dir", folder)
+        settings.setValue("qgis_stac/mosaicjson_dir", folder)
 
         specs, left_out = plan_mosaicjson(items, folder, datetime.now().strftime("%H%M%S"))
         if not specs:
@@ -1439,66 +1391,6 @@ class SearchTab(QWidget):
             parts.append(f"{len(failed)} failed (first: {failed[0][0]}: {failed[0][1]})")
         (self._warn if failed else self._info)("; ".join(parts) + ".")
 
-    # ---- server mosaic ----------------------------------------------------------------------
-
-    def add_server_mosaic(self):
-        if self._busy():
-            return
-        items = self.selected_items()
-        # KyFromAbove's tiles use its titiler-pgstac server. Another source's tiles need that source's own
-        # titiler (Sources... > Tile server...); tiles of a source without one are left out.
-        skipped = sum(1 for i in items if not self._can_server_mosaic(i))
-        self._server_mosaic_note = (
-            f"{skipped} tile{'s' if skipped != 1 else ''} left out (no tile server set for {'their' if skipped != 1 else 'its'} source)"
-            if skipped
-            else ""
-        )
-        groups = plan_server_mosaics(
-            items,
-            lambda uri: tiler_url() if is_default_uri(uri) else tiler_for(self._sources, uri),
-            lambda uri: source_name(self._sources, uri),
-        )
-        if not groups:
-            self._info(
-                "Nothing to register: no tile server is set for the selected tiles' source."
-                if skipped
-                else "Nothing to register: the selected tiles have no usable collection."
-            )
-            return
-        self.server_mosaic_button.setText("Registering mosaic...")
-        self._register_task = RegisterMosaicsTask(groups, self._on_server_mosaics_registered)
-        self._update_add_enabled()
-        QgsApplication.taskManager().addTask(self._register_task)
-
-    def _on_server_mosaics_registered(self, built: list, failed: list):
-        self._register_task = None
-        self.server_mosaic_button.setText("Add as server mosaic")
-        added, tile_layers, extra_notes = 0, 0, []
-        for group, search_id, style, kind in built:
-            if kind == "cog":  # a plain titiler: one layer per tile
-                count, notes = add_cog_layers(group)
-                tile_layers += count
-                extra_notes.extend(notes)
-                continue
-            layer, message = add_search_layer(search_id, group, style)
-            if layer is not None:
-                added += 1
-            elif "already" not in message:
-                extra_notes.append(message)
-
-        parts = [f"Added {added} server mosaic{'s' if added != 1 else ''}"]
-        if tile_layers:
-            parts.append(f"{tile_layers} tile layer{'s' if tile_layers != 1 else ''} from a titiler server")
-        if self._server_mosaic_note:
-            parts.append(self._server_mosaic_note)
-        if failed:
-            first = f"{failed[0][0]}: {failed[0][1]}"
-            parts.append(f"{len(failed)} failed to register (first: {first})")
-        parts.extend(extra_notes)
-        text = "; ".join(parts) + "."
-        (self._warn if failed or extra_notes else self._info)(text)
-        self._update_add_enabled()
-
     # ---- download -------------------------------------------------------------------------
 
     def download_selected(self):
@@ -1523,11 +1415,11 @@ class SearchTab(QWidget):
             self._vpc_options = options
         settings = QgsSettings()
         folder = QFileDialog.getExistingDirectory(
-            self, "Download tiles to", str(settings.value("kentucky_stac/download_dir", "") or "")
+            self, "Download tiles to", str(settings.value("qgis_stac/download_dir", "") or "")
         )
         if not folder:
             return
-        settings.setValue("kentucky_stac/download_dir", folder)
+        settings.setValue("qgis_stac/download_dir", folder)
         self.start_download(items, folder)
 
     def start_download(self, items: List[Item], folder: str):
@@ -1728,7 +1620,7 @@ class SearchTab(QWidget):
                 self._run_add(specs, notes)
             return
         folder = os.path.dirname(paths[0])
-        vpc_path = os.path.join(folder, f"kentucky_stac_pointcloud_{datetime.now().strftime('%H%M%S')}.vpc")
+        vpc_path = os.path.join(folder, f"qgis_stac_pointcloud_{datetime.now().strftime('%H%M%S')}.vpc")
         notes.append(f"combined into one virtual point cloud ({os.path.basename(vpc_path)})")
         self._make_vpc(entries, vpc_path, self._vpc_options, notes)
 
@@ -1749,17 +1641,17 @@ class SearchTab(QWidget):
 
     def _warn(self, text: str):
         if self._bar is not None:
-            self._bar.pushMessage("Kentucky STAC", text, level=Qgis.MessageLevel.Warning, duration=8)
+            self._bar.pushMessage("STAC", text, level=Qgis.MessageLevel.Warning, duration=8)
 
     def _info(self, text: str):
         if self._bar is not None:
-            self._bar.pushMessage("Kentucky STAC", text, level=Qgis.MessageLevel.Info, duration=8)
+            self._bar.pushMessage("STAC", text, level=Qgis.MessageLevel.Info, duration=8)
 
     def shutdown(self):
         self._json_hover.reset()
         self._link.shutdown()
         self._cancel_thumbnail_fetches()
-        for attr in ("_task", "_add_task", "_size_task", "_mosaic_task", "_register_task", "_clip_task"):
+        for attr in ("_task", "_add_task", "_size_task", "_mosaic_task", "_clip_task"):
             task = getattr(self, attr)
             if task is not None:
                 task.cancel()

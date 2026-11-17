@@ -1,4 +1,4 @@
-"""STAC API client for the Kentucky From Above catalog (or any STAC API).
+"""STAC API client for any STAC API.
 
 Endpoints used: GET /collections, GET|POST /search, GET /collections/{id}/items/{id}. Pagination
 follows the "next" link, including POST-style links that carry a body.
@@ -22,8 +22,8 @@ from typing import Any, Callable, Dict, Iterator, List, Optional, Sequence, Tupl
 
 from .models import Collection, Item, ItemCollection, Link
 
-DEFAULT_BASE_URI = "https://spved5ihrl.execute-api.us-west-2.amazonaws.com"
-USER_AGENT = "KentuckyStac/0.1"
+DEFAULT_BASE_URI = "https://planetarycomputer.microsoft.com/api/stac/v1"
+USER_AGENT = "QgisStac/0.1"
 MAX_LIMIT = 10000
 
 # transport(method, url, body, headers) -> response bytes. Raises StacError on failure.
@@ -165,8 +165,8 @@ class StacClient:
         return found[:limit]
 
     def collections(self, max_pages: int = 20) -> List[Collection]:
-        """Every collection, following rel="next" links -- KyFromAbove returns them all at once,
-        but some STAC APIs paginate /collections. max_pages guards against a server whose next
+        """Every collection, following rel="next" links -- some STAC APIs return them all at once,
+        others paginate /collections. max_pages guards against a server whose next
         link never runs out."""
         url: Optional[str] = f"{self._root}/collections"
         found: List[Collection] = []

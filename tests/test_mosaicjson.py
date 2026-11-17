@@ -1,16 +1,16 @@
-from kentucky_stac.mosaicjson import MosaicJsonSpec, build_mosaicjson, native_gsd, plan_mosaicjson
-from kentucky_stac.stac import Item
+from qgis_stac.mosaicjson import MosaicJsonSpec, build_mosaicjson, native_gsd, plan_mosaicjson
+from qgis_stac.stac import Item
 
 
 def test_quadkey_matches_the_standard_reference_example():
-    from kentucky_stac.mosaicjson import _quadkey
+    from qgis_stac.mosaicjson import _quadkey
 
     # The canonical example from Microsoft's Bing Maps Tile System docs: tile (3, 5) at level 3.
     assert _quadkey(3, 5, 3) == "213"
 
 
 def test_zoom_for_extent_is_smaller_for_a_larger_bbox():
-    from kentucky_stac.mosaicjson import _zoom_for_extent
+    from qgis_stac.mosaicjson import _zoom_for_extent
 
     one_tile = _zoom_for_extent((-84.6, 37.98, -84.5, 38.06))
     all_of_kentucky = _zoom_for_extent((-89.5, 36.5, -81.9, 39.1))
@@ -18,7 +18,7 @@ def test_zoom_for_extent_is_smaller_for_a_larger_bbox():
 
 
 def test_zoom_for_resolution_is_higher_for_a_finer_gsd():
-    from kentucky_stac.mosaicjson import _zoom_for_resolution
+    from qgis_stac.mosaicjson import _zoom_for_resolution
 
     ortho_3in = _zoom_for_resolution(0.075, 37.5)
     dem_2_5ft = _zoom_for_resolution(0.75, 37.5)

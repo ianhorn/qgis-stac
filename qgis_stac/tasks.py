@@ -40,7 +40,7 @@ class CollectionsTask(QgsTask):
     task was cancelled; errors is a list of (source name, message)."""
 
     def __init__(self, sources: Sequence[ApiSource], callback: Callable[[List[Collection], List[Tuple[str, str]]], None]):
-        super().__init__("Loading Kentucky STAC collections")
+        super().__init__("Loading STAC collections")
         self._sources = list(sources)
         self._callback = callback
         self.collections: List[Collection] = []
@@ -96,7 +96,7 @@ class SearchTask(QgsTask):
         source_names=None,
         max_results: int = MAX_RESULTS,
     ):
-        super().__init__("Searching Kentucky STAC")
+        super().__init__("Searching STAC")
         self._groups = list(groups)
         self._query = query
         self._callback = callback

@@ -56,7 +56,7 @@ def ensure_ca_bundle() -> Optional[str]:
     if not certificates:
         return None
 
-    directory = os.path.join(QgsApplication.qgisSettingsDirPath() or tempfile.gettempdir(), "kentucky_stac")
+    directory = os.path.join(QgsApplication.qgisSettingsDirPath() or tempfile.gettempdir(), "qgis_stac")
     os.makedirs(directory, exist_ok=True)
     path = os.path.join(directory, "ca-bundle.pem")
     tmp = path + ".tmp"
@@ -88,8 +88,7 @@ def ensure_http_tuning() -> bool:
     nor the point-cloud timings at all. So the win from fewer/larger requests may just be ordinary
     network round-trip latency, which would make it a plain win with no antivirus story attached.
     GDAL_HTTP_VERSION=2 does NOT multiplex requests in practice either way -- traced against the
-    kyfromabove S3 bucket (the only host GDAL ever reads in this plugin; the titiler tile server is
-    read through QGIS's own XYZ/WMS provider instead, never through GDAL), the connection negotiated
+    an S3 bucket serving COGs, the connection negotiated
     plain HTTP/1.1 regardless of this option. Left set in case a future GDAL source does serve
     HTTP/2, but it is not what is making this faster.
 

@@ -1,6 +1,6 @@
 from urllib.parse import parse_qs, urlparse
 
-from kentucky_stac.feedback import (
+from qgis_stac.feedback import (
     REPO_URL,
     SUBJECT,
     direct_payload,
@@ -11,15 +11,15 @@ from kentucky_stac.feedback import (
 
 
 def test_environment_summary_skips_unknown_parts():
-    assert environment_summary("0.1.0", "3.44.4", " Windows-11 ") == "Kentucky STAC 0.1.0 | QGIS 3.44.4 | Windows-11"
-    assert environment_summary("", None, None) == "Kentucky STAC unknown"
+    assert environment_summary("0.1.0", "3.44.4", " Windows-11 ") == "STAC 0.1.0 | QGIS 3.44.4 | Windows-11"
+    assert environment_summary("", None, None) == "STAC unknown"
 
 
 def test_github_issue_url_prefills_template_and_environment():
-    url = github_issue_url("Kentucky STAC 0.1.0 | QGIS 3.44")
+    url = github_issue_url("STAC 0.1.0 | QGIS 3.44")
     assert url.startswith(f"{REPO_URL}/issues/new?")
     body = parse_qs(urlparse(url).query)["body"][0]
-    assert "**What happened?**" in body and body.endswith("Environment: Kentucky STAC 0.1.0 | QGIS 3.44")
+    assert "**What happened?**" in body and body.endswith("Environment: STAC 0.1.0 | QGIS 3.44")
 
 
 def test_direct_payload():

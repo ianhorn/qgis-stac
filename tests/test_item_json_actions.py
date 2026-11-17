@@ -1,7 +1,7 @@
 
-from kentucky_stac.catalog import can_add_to_map
-from kentucky_stac.item_json import item_json_text, json_to_html, parse_action_url
-from kentucky_stac.stac import Asset, Item
+from qgis_stac.catalog import can_add_to_map
+from qgis_stac.item_json import item_json_text, json_to_html, parse_action_url
+from qgis_stac.stac import Asset, Item
 
 RAW = {
     "id": "X",
@@ -40,7 +40,7 @@ def test_no_action_links_without_an_item_and_ordinary_links_survive():
 
 
 def test_action_urls_round_trip_odd_keys():
-    from kentucky_stac.item_json import action_url
+    from qgis_stac.item_json import action_url
 
     assert parse_action_url(action_url("copy", "ANG.txt")) == ("copy", "ANG.txt")
     assert parse_action_url(action_url("map", "a/b c")) == ("map", "a/b c")

@@ -1,4 +1,4 @@
-"""Reading assets whose URL is an s3:// address (common outside KyFromAbove, e.g. Earth Search).
+"""Reading assets whose URL is an s3:// address (e.g. Earth Search).
 
 QGIS's network stack and GDAL's /vsicurl only speak http(s), so:
 

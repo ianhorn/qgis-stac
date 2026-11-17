@@ -1,22 +1,21 @@
 # Manual QA checklist
 
-CI covers the logic and the widgets' behaviour, but it can't click through QGIS against the live Kentucky From
-Above catalog. Run this before a release, especially before dropping `experimental=True`.
+CI covers the logic and the widgets' behaviour, but it can't click through QGIS against the live
+Microsoft Planetary Computer catalog. Run this before a release, especially before dropping `experimental=True`.
 
-**Setup.** Install the build under test (a linked `kentucky_stac/` folder, or the release zip via *Install from
-ZIP*). Open **View → Panels → Log Messages** and keep the **Kentucky STAC** tab visible throughout.
+**Setup.** Install the build under test (a linked `qgis_stac/` folder, or the release zip via *Install from
+ZIP*). Open **View → Panels → Log Messages** and keep the **STAC** tab visible throughout.
 
 **Reading the log.** The plugin writes a warning with a full traceback only when something unexpected fails in a
-background task (adding a layer, building a mosaic, downloading, loading collections, searching, registering a
-server mosaic). A normal run of this checklist should add **no** Kentucky STAC warnings. Copy any traceback into
+background task (adding a layer, building a mosaic, downloading, loading collections, searching). A normal run of this checklist should add **no** STAC warnings. Copy any traceback into
 the issue you file.
 
 Use a small area (a few tiles, e.g. one county) so each step is quick. Tick the box when it behaves as described.
 
 ## Start-up
 
-- [ ] QGIS starts with the plugin enabled and no error dialog; **Plugins → Kentucky STAC** opens the dock.
-- [ ] Both tabs list collections (**Imagery / DEM** and **LiDAR Pointcloud**); the status line shows a count.
+- [ ] QGIS starts with the plugin enabled and no error dialog; **Plugins → STAC** opens the dock.
+- [ ] Both tabs list collections (**Raster** and **Point Cloud**); the status line shows a count.
 - [ ] *Reload* re-fetches the list.
 
 ## Area of interest
@@ -24,10 +23,10 @@ Use a small area (a few tiles, e.g. one county) so each step is quick. Tick the 
 - [ ] Draw a **Polygon**: right-click finishes it, the tool deactivates itself, the AOI shows on the map.
 - [ ] Draw a **Point** and a **Line**; each replaces the previous AOI.
 - [ ] **Select features** (click, then drag a box) turns existing polygons into the AOI.
-- [ ] **Current extent** and **Clear** work. After setting any AOI, a "Ky STAC AOI" scratch layer is
+- [ ] **Current extent** and **Clear** work. After setting any AOI, a "STAC AOI" scratch layer is
       created (no "could not save it to a layer" warning in the message bar).
 
-## Imagery / DEM tab
+## Raster tab
 
 - [ ] Tick a collection, *Zoom to collection* moves the map; with nothing ticked it is grayed out.
 - [ ] **Search area of interest** lists tiles; the results list and the map footprints highlight together
@@ -37,12 +36,12 @@ Use a small area (a few tiles, e.g. one county) so each step is quick. Tick the 
 - [ ] **Add selected to map** streams the COGs; each lands where its footprint is (not far away in the wrong place).
 - [ ] Right-click a raster: a band combination, an index (NDVI), and a single band each add a layer.
 - [ ] **Export VRT** with two or more tiles writes a `.vrt` that opens and looks continuous.
-- [ ] **Export as MosaicJSON** writes a file; **Add as server mosaic** adds a streaming layer.
+- [ ] **Export as MosaicJSON** writes a file.
 - [ ] **Download selected...** shows sizes, downloads, and with *Clip to area of interest* ticked (polygon AOI)
       clips to the AOI shape. *Cancel* during a download stops it cleanly.
 - [ ] **Export as script** produces a notebook / Python / R / shell script that downloads the same tiles when run.
 
-## LiDAR Pointcloud tab
+## Point Cloud tab
 
 - [ ] Search lists point cloud tiles with point counts and a compound projection label.
 - [ ] **Add selected to map** streams COPC tiles; the cloud is drawn in the right place (check a 3DEP collection).
@@ -54,12 +53,11 @@ Use a small area (a few tiles, e.g. one county) so each step is quick. Tick the 
 
 ## Other STAC APIs (experimental)
 
-- [ ] **Sources...** → pick one from the STAC Index dropdown → *Add*; tabs rename to **Raster** / **Point Cloud**
-      and its collections are labeled `Title · Source`.
+- [ ] **Sources...** → pick one from the STAC Index dropdown → *Add*; its collections are labeled `Title · Source`.
 - [ ] A **Microsoft Planetary Computer** collection: search, add a tile to the map (Azure token signing), no 403.
 - [ ] An unreachable or wrong URL is reported for that source only; the other sources still work.
 - [ ] A catalog-of-catalogs URL (not an API) reports the catalogs to use instead.
-- [ ] Switching back to **KyFromAbove** restores the original tab names.
+- [ ] Picking **Microsoft Planetary Computer** with *Replace all sources* restores the default.
 
 ## Robustness
 

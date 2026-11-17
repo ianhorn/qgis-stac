@@ -21,7 +21,7 @@ from qgis.core import (
 from qgis.PyQt.QtWidgets import QCheckBox, QDialog, QDialogButtonBox, QLabel, QVBoxLayout
 
 ALGORITHM_ID = "pdal:virtualpointcloud"
-_SETTINGS = "kentucky_stac/vpc_{}"
+_SETTINGS = "qgis_stac/vpc_{}"
 
 
 @dataclass(frozen=True)

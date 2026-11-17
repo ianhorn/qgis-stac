@@ -19,10 +19,10 @@ from qgis.core import (  # noqa: E402
     QgsProject,
 )
 
-from kentucky_stac import auth, search_tab  # noqa: E402
-from kentucky_stac.aoi import AoiState  # noqa: E402
-from kentucky_stac.sources import DEFAULT_SOURCE, ApiSource  # noqa: E402
-from kentucky_stac.stac import Asset, Collection, Item  # noqa: E402
+from qgis_stac import auth, search_tab  # noqa: E402
+from qgis_stac.aoi import AoiState  # noqa: E402
+from qgis_stac.sources import DEFAULT_SOURCE, ApiSource  # noqa: E402
+from qgis_stac.stac import Asset, Collection, Item  # noqa: E402
 
 OTHER = ApiSource("Other API", "https://other.example/stac")
 POLYGON = "POLYGON((-85 37, -84 37, -84 38, -85 38, -85 37))"
@@ -279,17 +279,6 @@ def test_selecting_tiles_enables_the_action_buttons(tab):
     assert [i.id for i in tab.selected_items()] == ["b"]
     tab.tree.clearSelection()
     assert not tab.add_button.isEnabled() and tab.selected_items() == []
-
-
-def test_server_mosaic_needs_a_tile_server_for_another_source(tab):
-    other_item = _item("x")
-    other_item.source = OTHER.base_uri
-    tab._on_results([other_item], 1, False, None)
-    tab.tree.selectAll()
-    assert not tab.server_mosaic_button.isEnabled()
-    assert "Other API" in tab.server_mosaic_button.toolTip()
-    tab.set_sources([DEFAULT_SOURCE, ApiSource(OTHER.name, OTHER.base_uri, tiler_url="https://titiler.example")])
-    assert tab.server_mosaic_button.isEnabled()
 
 
 @pytest.fixture

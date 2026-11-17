@@ -5,13 +5,13 @@ from qgis.PyQt.QtCore import Qt
 from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtWidgets import QAction
 
-from .dock import KentuckyStacDock
+from .dock import StacDock
 from .gdal_setup import setup_gdal
 
-PLUGIN_NAME = "Kentucky STAC"
+PLUGIN_NAME = "STAC"
 
 
-class KentuckyStacPlugin:
+class StacPlugin:
     def __init__(self, iface):
         self.iface = iface
         self.action = None
@@ -24,10 +24,10 @@ class KentuckyStacPlugin:
             setup_gdal()
         except Exception as e:  # noqa: BLE001 - remote rasters may fail to open, but the plugin itself should still load
             QgsMessageLog.logMessage(
-                f"Could not apply the GDAL network settings: {e}", "Kentucky STAC", Qgis.MessageLevel.Warning
+                f"Could not apply the GDAL network settings: {e}", "STAC", Qgis.MessageLevel.Warning
             )
 
-        self.dock = KentuckyStacDock(self.iface, self.iface.mainWindow())
+        self.dock = StacDock(self.iface, self.iface.mainWindow())
         self.iface.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, self.dock)
         self.dock.hide()
 

@@ -14,7 +14,7 @@ output). The constraints below are carried over from that add-in, not re-derived
    optional metadata a plain LAZ reader just ignores, decompressing every point regardless).
  - filters.crop needs an explicit "a_srs" naming the CRS the *given polygon* is in (EPSG:4326 here,
    matching the STAC search geometry) -- it otherwise assumes the polygon is in the same CRS as the
-   point data (a Kentucky State Plane variant, in feet), and every point silently fails the crop,
+   point data (e.g. a US State Plane variant, in feet), and every point silently fails the crop,
    producing an empty/degenerate output.
  - filters.crop given several regions does NOT union them -- it produces one output point view PER
    region. A multi-part AOI (see aoi.wkt_parts) needs one filters.crop stage per part off a single

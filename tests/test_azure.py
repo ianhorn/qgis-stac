@@ -1,4 +1,4 @@
-from kentucky_stac import azure
+from qgis_stac import azure
 
 
 def test_parse():

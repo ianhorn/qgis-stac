@@ -12,8 +12,8 @@
 </script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Kentucky STAC</title>
-<meta name="description" content="QGIS plugin for searching, loading and downloading Kentucky From Above imagery, elevation and LiDAR through its STAC API.">
+<title>STAC</title>
+<meta name="description" content="QGIS plugin for searching, loading and downloading imagery, elevation and LiDAR through STAC APIs.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect x='2' y='2' width='56' height='56' rx='11' fill='%23336699'/%3E%3Cg fill='none' stroke='%23FFFFFF' stroke-width='5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M13 14 V42 M29 14 L13 30 M19 26 L30 42'/%3E%3Cpath d='M34 24 L41.5 40 M49 24 L39 48'/%3E%3C/g%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -209,10 +209,10 @@
           <path d="M34 24 L41.5 40 M49 24 L39 48"/>
         </g>
       </svg>
-      <span class="brand-name">Kentucky STAC</span>
+      <span class="brand-name">STAC</span>
     </div>
-    <h1 class="title">Search, stream and download Kentucky From Above imagery, DEM and LiDAR &mdash; right inside QGIS.</h1>
-    <p class="tagline">A QGIS plugin that talks directly to the Kentucky From Above STAC API: draw an area of
+    <h1 class="title">Search, stream and download imagery, elevation and LiDAR from STAC catalogs &mdash; right inside QGIS.</h1>
+    <p class="tagline">A QGIS plugin that talks directly to STAC APIs, Microsoft Planetary Computer by default: draw an area of
       interest, search imagery, elevation and LiDAR collections, preview results, and stream or download
       exactly the tiles you need &mdash; no manual catalog browsing, no separate download manager.</p>
     <div class="hero-badges">
@@ -223,7 +223,7 @@
     <div class="hero-links">
       <a class="btn btn-light" href="#installation">Get started</a>
       <a class="btn btn-outline" href="#features">See what it does</a>
-      <a class="btn btn-outline" href="https://github.com/ianhorn/kentucky-stac" target="_blank" rel="noopener">View on GitHub</a>
+      <a class="btn btn-outline" href="https://github.com/ianhorn/qgis-stac" target="_blank" rel="noopener">View on GitHub</a>
     </div>
   </div>
 </header>
@@ -238,7 +238,7 @@
     <a href="#sources">Other STAC APIs</a>
     <a href="#logins">Sources that need a login</a>
     <a href="#results">Results list</a>
-    <a href="#imagery-actions">Imagery / DEM actions</a>
+    <a href="#imagery-actions">Raster actions</a>
     <a href="#lidar-actions">LiDAR actions</a>
     <a href="#point-filter">Point filter</a>
     <a href="#bands-menu">Right-click: bands &amp; indices</a>
@@ -253,10 +253,10 @@
 
   <section id="overview">
     <h2>Overview</h2>
-    <p class="lede">Kentucky STAC is the QGIS successor to two ArcGIS Pro add-ins &mdash; <code>kyfromabove-stac-addin</code>
-      (imagery &amp; elevation) and <code>kylidar-addin</code> (LiDAR) &mdash; merged into a single tabbed dock panel.</p>
-    <p>The plugin adds one dock, <strong>Kentucky STAC</strong>, with two tabs: <strong>Imagery / DEM</strong> and
-      <strong>LiDAR Pointcloud</strong>. Both work the same way: set an area of interest, pick one or more
+    <p class="lede">STAC is the QGIS successor to two ArcGIS Pro add-ins &mdash; <code>stac-arcgispro-addin</code>
+      (imagery &amp; elevation) and <code>lidar-arcgispro-addin</code> (LiDAR) &mdash; merged into a single tabbed dock panel.</p>
+    <p>The plugin adds one dock, <strong>STAC</strong>, with two tabs: <strong>Raster</strong> and
+      <strong>Point Cloud</strong>. Both work the same way: set an area of interest, pick one or more
       collections, search, then add results to the map, download them, or export them for use outside QGIS.</p>
     <div class="pill-row">
       <span class="pill">STAC search</span>
@@ -267,7 +267,7 @@
       <span class="pill">Download scripts</span>
       <span class="pill">Map-linked results</span>
       <span class="pill">Band combinations &amp; indices</span>
-      <span class="pill">titiler-pgstac mosaics</span>
+      <span class="pill">MosaicJSON export</span>
       <span class="pill">PDAL AOI clipping</span>
     </div>
   </section>
@@ -284,18 +284,18 @@
     </ul>
     <h3>Install the plugin</h3>
     <p><strong>From the QGIS plugin repository (recommended).</strong> Open <strong>Plugins &rarr; Manage and Install Plugins</strong> and search for
-      <strong>Kentucky STAC</strong> under <strong>All</strong>, then click <strong>Install Plugin</strong>. It is also at
-      <a href="https://plugins.qgis.org/plugins/kentucky_stac/" target="_blank" rel="noopener">plugins.qgis.org/plugins/kentucky_stac</a>, and each
-      version&rsquo;s zip is on the <a href="https://github.com/ianhorn/kentucky-stac/releases" target="_blank" rel="noopener">GitHub Releases</a> page
+      <strong>STAC</strong> under <strong>All</strong>, then click <strong>Install Plugin</strong>. It is also at
+      <a href="https://plugins.qgis.org/plugins/qgis_stac/" target="_blank" rel="noopener">plugins.qgis.org/plugins/qgis_stac</a>, and each
+      version&rsquo;s zip is on the <a href="https://github.com/ianhorn/qgis-stac/releases" target="_blank" rel="noopener">GitHub Releases</a> page
       (<strong>Install from ZIP</strong> works with it too).</p>
     <p><strong>From source, for development.</strong> The source is on GitHub at
-      <a href="https://github.com/ianhorn/kentucky-stac" target="_blank" rel="noopener">ianhorn/kentucky-stac</a>
-      (<code>git clone https://github.com/ianhorn/kentucky-stac.git</code>); the plugin is the <code>kentucky_stac/</code> folder.</p>
-    <p>Copy (or symlink/junction) the <code>kentucky_stac/</code> folder into your QGIS
+      <a href="https://github.com/ianhorn/qgis-stac" target="_blank" rel="noopener">ianhorn/qgis-stac</a>
+      (<code>git clone https://github.com/ianhorn/qgis-stac.git</code>); the plugin is the <code>qgis_stac/</code> folder.</p>
+    <p>Copy (or symlink/junction) the <code>qgis_stac/</code> folder into your QGIS
       profile's plugin directory:</p>
-    <pre><code>%APPDATA%\QGIS\QGIS3\profiles\default\python\plugins\kentucky_stac</code></pre>
+    <pre><code>%APPDATA%\QGIS\QGIS3\profiles\default\python\plugins\qgis_stac</code></pre>
     <p>Either way, enable it under <strong>Plugins &rarr; Manage and Install Plugins &rarr; Installed</strong> and open
-      it from <strong>Plugins &rarr; Kentucky STAC</strong> (or the toolbar icon). A junction to your working copy means
+      it from <strong>Plugins &rarr; STAC</strong> (or the toolbar icon). A junction to your working copy means
       <em>Uninstall</em> or <em>Install from ZIP</em> in the Plugin Manager would delete the working copy, so don&rsquo;t use those while developing. The
       <a href="https://plugins.qgis.org/plugins/plugin_reloader/" target="_blank" rel="noopener">Plugin Reloader</a>
       plugin picks up code changes without restarting QGIS.</p>
@@ -345,22 +345,20 @@
   </section>
 
   <section id="sources">
-    <h2>Other STAC APIs (experimental)</h2>
-    <p class="lede">Besides the built-in KyFromAbove catalog, the dock can search any public STAC API &mdash;
+    <h2>Sources: other STAC APIs</h2>
+    <p class="lede">Besides the default Microsoft Planetary Computer catalog, the dock can search any public STAC API &mdash;
       picked from <a href="https://stacindex.org" target="_blank" rel="noopener">STAC Index</a> or typed in by URL.</p>
     <ul>
       <li><strong>Sources...</strong> (above the tabs) opens the source list. Choose a catalog from the
         <strong>STAC Index</strong> dropdown (which fills in a name and URL), or type an API base URL yourself.
-        The list starts with KyFromAbove, then Microsoft Planetary Computer, then the rest of STAC Index A&ndash;Z.</li>
+        The list starts with Microsoft Planetary Computer (the default), then the rest of STAC Index A&ndash;Z.</li>
       <li><strong>Add</strong> searches the new API alongside the current sources; <strong>Replace all sources</strong>
-        searches only it. Picking <strong>KyFromAbove</strong> from the dropdown is the way back to the default.</li>
+        searches only it. Picking <strong>Microsoft Planetary Computer</strong> from the dropdown is the way back to the default.</li>
       <li>Another source's collections are labeled <code>Title &middot; Source name</code> in the checklist and in
-        the results. While any source other than KyFromAbove is active, the two tabs are renamed
-        <strong>Raster</strong> and <strong>Point Cloud</strong>. Raster has the imagery/DEM actions and Point Cloud has the
-        same actions as the LiDAR tab (streaming, download, Virtual Point Clouds with their options, clipping to the AOI,
-        Export as script). Another source&rsquo;s collections are listed on <strong>both</strong> tabs, since they can&rsquo;t be
-        classified reliably: pick a point cloud collection on Point Cloud, anything else on Raster. With KyFromAbove alone the
-        tabs are called Imagery / DEM and LiDAR Pointcloud, and its own collections stay on their matching tab.</li>
+        the results. Raster has the imagery/DEM actions and Point Cloud has the
+        actions for point clouds (streaming, download, Virtual Point Clouds with their options, clipping to the AOI,
+        Export as script). Each collection is placed by what it declares (the STAC point cloud extension, a
+        &ldquo;point cloud&rdquo; or &ldquo;copc&rdquo; keyword, or a point cloud item asset); anything else is listed on Raster.</li>
       <li>Each source loads and searches independently: an unreachable API is reported, but doesn't stop the others.</li>
       <li>The source list is remembered between QGIS sessions.</li>
       <li>If an API or its files need a login, set one with <strong>Login</strong>; see <a href="#logins">Sources that need a login</a>.</li>
@@ -371,26 +369,14 @@
         (Landsat is also on Microsoft Planetary Computer).</li>
     </ul>
     <p>Other APIs implement STAC differently, so thumbnails, adding to the map, or downloads may not work for
-      every one. Files at <code>s3://</code> addresses (common outside KyFromAbove) are handled for you:
+      every one. Files at <code>s3://</code> addresses (e.g. Earth Search) are handled for you:
       public ones are downloaded and streamed through their https address. Files on Azure Blob Storage, which is
       how Microsoft Planetary Computer serves its assets, are signed automatically with a free SAS token from the
       Planetary Computer&rsquo;s token service (cached until shortly before it expires). Private and requester-pays buckets
       (e.g. NAIP on Earth Search) need your own AWS credentials, set as the <code>AWS_ACCESS_KEY_ID</code> /
       <code>AWS_SECRET_ACCESS_KEY</code> environment variables or in <code>~/.aws/credentials</code>
       (restart QGIS after setting them). With credentials found, files are read through GDAL&rsquo;s signed S3
-      access, and for requester-pays buckets the transfer charges go to your AWS account. <strong>Add as server mosaic</strong> uses KyFromAbove&rsquo;s titiler-pgstac server for KyFromAbove tiles. For
-      tiles from another source the button stays <strong>grayed out</strong> until you have brought your own titiler: set it under
-      <strong>Sources... &rarr; Tile server...</strong> (hover the button to see which source needs one). If you select tiles from
-      several sources, the ones without a tile server are left out. This is <strong>experimental</strong>.
-      Two kinds of server work, and the plugin works out which yours is:</p>
-    <ul>
-      <li><a href="https://github.com/stac-utils/titiler-pgstac" target="_blank" rel="noopener">titiler-pgstac</a> connected
-        to that API&rsquo;s catalog &mdash; one mosaic layer per collection.</li>
-      <li>A plain <a href="https://developmentseed.org/titiler/" target="_blank" rel="noopener">titiler</a> &mdash; one layer
-        per tile (up to 50 at a time), each reading the tile&rsquo;s own file. No catalog connection needed.</li>
-    </ul>
-    <p>The server must be able to read the files: public https is fine; <code>s3://</code> files need the server to have its own
-      AWS access. The dialog&rsquo;s <strong>i</strong> button explains this.</p>
+      access, and for requester-pays buckets the transfer charges go to your AWS account.</p>
   </section>
 
   <section id="logins">
@@ -454,9 +440,9 @@
     <table>
       <tr><th>Field</th><th>Notes</th></tr>
       <tr><td>Size</td><td>Blank until you download or check sizes &mdash; the catalog doesn't carry file size up front.</td></tr>
-      <tr><td>Projection</td><td>A plain <code>EPSG:N</code> for imagery/DEM. LiDAR tiles have a compound
+      <tr><td>Projection</td><td>A plain <code>EPSG:N</code> when the tile declares one. Some LiDAR tiles have a compound
         horizontal+vertical CRS with no single EPSG code, so it's shown as <code>EPSG:horizontal/EPSG:vertical</code>
-        (e.g. <code>EPSG:6473/EPSG:6360</code> for NAD83(2011) Kentucky Single Zone + NAVD88 height).</td></tr>
+        (e.g. <code>EPSG:6473/EPSG:6360</code> for a state plane CRS + NAVD88 height).</td></tr>
       <tr><td>Points</td><td>LiDAR tiles only, from the catalog's own point count &mdash; not re-derived.</td></tr>
     </table>
     <h3>Selecting tiles</h3>
@@ -474,13 +460,12 @@
   </section>
 
   <section id="imagery-actions">
-    <h2>Imagery / DEM actions</h2>
+    <h2>Raster actions</h2>
     <div class="card-grid">
       <div class="card"><h4>Add selected to map</h4><p>Streams the selected COG tiles directly as map layers &mdash; no download.</p></div>
       <div class="card"><h4>Download selected&hellip;</h4><p>Downloads the selected tiles to a folder you choose, after checking their total size.</p></div>
       <div class="card"><h4>Export VRT</h4><p>Stitches the selected tiles into a GDAL virtual raster, one per collection, and adds it to the map.</p></div>
       <div class="card"><h4>Export as MosaicJSON&hellip;</h4><p>Writes a <a href="https://github.com/developmentseed/mosaicjson-spec" target="_blank" rel="noopener">MosaicJSON</a> file per collection &mdash; a portable index that titiler, rio-tiler or cogeo-mosaic can read directly, with no GDAL or server round trip involved.</p></div>
-      <div class="card"><h4>Add as server mosaic</h4><p>Registers a titiler-pgstac search restricted to the selected tiles and streams it &mdash; a precise crop of the statewide mosaic, with no download or local stitching.</p></div>
       <div class="card"><h4>Export as script&hellip;</h4><p>Saves a Jupyter notebook, Python, R or shell script that downloads the selected tiles outside QGIS. See <a href="#export-script">Export as script</a>.</p></div>
       <div class="card"><h4>Right-click a tile</h4><p>Add one band, a band combination (color infrared, SWIR...) or an index (NDVI, NDWI, your own formula). See <a href="#bands-menu">Right-click: bands &amp; indices</a>.</p></div>
     </div>
@@ -535,7 +520,7 @@
 
   <section id="bands-menu">
     <h2>Right-click: bands, combinations and indices</h2>
-    <p class="lede">Right-click a result (or a selection of results) on the Imagery / DEM or Raster tab. Besides <strong>Add to map</strong>
+    <p class="lede">Right-click a result (or a selection of results) on the Raster tab. Besides <strong>Add to map</strong>
       the menu offers three submenus, each applied to every selected tile that has the bands it needs. A right-click on a tile outside the
       selection acts on that tile alone.</p>
     <div class="card-grid">
@@ -547,8 +532,7 @@
     <p>Bands are recognised by the catalog&rsquo;s own band names (<code>eo:bands</code> / <code>bands</code> common names such as
       <code>red</code>, <code>nir</code>, <code>swir16</code>), or failing that by the asset&rsquo;s key. A combination or index is listed only when the tile
       has every band it needs; with several tiles selected it shows <em>(n of m tiles)</em> when only some do, and the others are left out.
-      This suits multispectral sources such as Sentinel-2 and Landsat; a catalog that offers only a single image per tile (KyFromAbove&rsquo;s own
-      orthos, for example) just gets <strong>Add asset</strong>. The LiDAR / Point Cloud tab has no right-click menu: point clouds (LAZ and COPC) have no bands to pick from, so use the buttons under the list there.</p>
+      This suits multispectral sources such as Sentinel-2 and Landsat; a catalog that offers only a single image per tile (a plain orthophoto collection, for example) just gets <strong>Add asset</strong>. The LiDAR / Point Cloud tab has no right-click menu: point clouds (LAZ and COPC) have no bands to pick from, so use the buttons under the list there.</p>
     <h3>Choosing several bands</h3>
     <p><strong>Add asset &rarr; Choose several&hellip;</strong> opens a list of the bands the selected tiles offer. Type in the filter box (for example
       <code>swir</code>), tick the ones you want and press OK: each ticked band is added as its own layer for every selected tile that has it. Tick
@@ -566,7 +550,7 @@
         reflectance scale and offset (<code>raster:bands</code>), they are applied first, which matters for ratios. Sentinel-2&rsquo;s &minus;0.1 offset can push the
         index of very dark pixels slightly beyond the &minus;1 to 1 range.</li>
       <li><strong>Band combinations</strong> are a small VRT file that lists the three remote bands. It is kept in your QGIS settings folder under
-        <code>kentucky_stac/vrt</code>, so a saved project keeps working.</li>
+        <code>qgis_stac/vrt</code>, so a saved project keeps working.</li>
       <li>Opening the remote files takes a few seconds, so the layer appears shortly after you choose it. Adding the same layer twice is skipped.</li>
     </ul>
   </section>
@@ -623,20 +607,12 @@
         often as <code>proj:epsg</code> or <code>proj:code</code>), and please <a href="#feedback">report it</a> with the collection and tile name so it can be handled.</li>
     </ol>
     <h3>"Preferred Transformation Not Available" dialog</h3>
-    <p>The first time QGIS needs to reproject between Kentucky's state plane CRS and WGS84, it may show a
-      dialog saying the preferred transform needs a grid file, <code>us_noaa_kyhpgn.tif</code>, that isn't
-      installed, and offers a 4&nbsp;m-accuracy fallback instead of the preferred 2&nbsp;m.</p>
-    <div class="callout callout-warn">
-      <span class="icon">&#9888;&#65039;</span>
-      <div>This is a PROJ/QGIS data notice, not a plugin bug. The accuracy difference is far below anything
-        this plugin's AOI search or placement logic is sensitive to &mdash; it's <strong>safe to click OK</strong>
-        and continue.</div>
-    </div>
-    <p>To stop seeing it: download the grid from
-      <a href="https://cdn.proj.org/us_noaa_kyhpgn.tif">cdn.proj.org/us_noaa_kyhpgn.tif</a> (a direct file,
-      not a page), then either use the dialog's own <strong>Install &hellip; from Folder</strong> button, or
-      drop it into your OSGeo4W install's PROJ data directory (<code>%OSGEO4W_ROOT%\share\proj\</code>) so
-      it's available to every tool using that PROJ install, not just QGIS.</p>
+    <p>The first time QGIS needs to reproject between a regional CRS (a US state plane CRS, for example) and WGS84,
+      it may show a dialog saying the preferred transform needs a grid file that isn't installed, and offers a
+      lower-accuracy fallback. This is a PROJ/QGIS data notice, not a plugin bug: the difference is far below anything
+      this plugin's AOI search or placement logic is sensitive to, so it's safe to click OK. To stop seeing it, install
+      the named grid from <a href="https://cdn.proj.org/">cdn.proj.org</a> with the dialog's own
+      <strong>Install &hellip; from Folder</strong> button, or drop it into your PROJ data directory.</p>
   </section>
 
   <section id="feedback">
@@ -649,16 +625,14 @@
 
   <section id="origins">
     <h2>Where this came from</h2>
-    <p>Kentucky STAC consolidates two separate ArcGIS Pro add-ins built for the same
-      <a href="https://kyfromabove.ky.gov/" target="_blank" rel="noopener">Kentucky From Above</a> catalog
-      &mdash; one for imagery/elevation, one for LiDAR &mdash; into a single cross-platform QGIS plugin with
-      one shared area-of-interest workflow instead of two separate tools.</p>
-    <p>The originals are
-      <a href="https://github.com/ianhorn/kyfromabove-stac-addin" target="_blank" rel="noopener">kyfromabove-stac-addin</a>
+    <p>STAC is the QGIS counterpart of two ArcGIS Pro add-ins &mdash; one for imagery/elevation, one for LiDAR &mdash;
+      combined into a single cross-platform plugin with one shared area-of-interest workflow.</p>
+    <p>The ArcGIS Pro add-ins are
+      <a href="https://github.com/ianhorn/stac-arcgispro-addin" target="_blank" rel="noopener">stac-arcgispro-addin</a>
       (imagery &amp; elevation) and
-      <a href="https://github.com/ianhorn/kylidar-addin" target="_blank" rel="noopener">kylidar-addin</a> (LiDAR);
+      <a href="https://github.com/ianhorn/lidar-arcgispro-addin" target="_blank" rel="noopener">lidar-arcgispro-addin</a> (LiDAR);
       this plugin lives at
-      <a href="https://github.com/ianhorn/kentucky-stac" target="_blank" rel="noopener">ianhorn/kentucky-stac</a>.</p>
+      <a href="https://github.com/ianhorn/qgis-stac" target="_blank" rel="noopener">ianhorn/qgis-stac</a>.</p>
     <p>Licensed <a href="https://www.gnu.org/licenses/old-licenses/gpl-2.0.html" target="_blank" rel="noopener">GPL-2.0-or-later</a>.</p>
   </section>
 
@@ -666,8 +640,8 @@
 </div>
 
 <footer>
-  Kentucky STAC &middot; QGIS plugin for the Kentucky From Above STAC catalog &middot;
-  <a href="https://github.com/ianhorn/kentucky-stac" target="_blank" rel="noopener">GitHub</a>
+  STAC &middot; QGIS plugin for STAC catalogs &middot;
+  <a href="https://github.com/ianhorn/qgis-stac" target="_blank" rel="noopener">GitHub</a>
 </footer>
 
 <script>

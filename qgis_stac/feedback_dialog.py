@@ -58,14 +58,14 @@ def current_environment() -> str:
 
 def open_help(parent=None):
     if not QDesktopServices.openUrl(QUrl(DOCS_SITE_URL)):
-        QMessageBox.warning(parent, "Kentucky STAC", f"Couldn't open the browser.\n\nThe docs are at {DOCS_SITE_URL}")
+        QMessageBox.warning(parent, "STAC", f"Couldn't open the browser.\n\nThe docs are at {DOCS_SITE_URL}")
 
 
 class SendFeedbackTask(QgsTask):
     """POST the feedback to Formspree. `callback(ok, error)` runs on the main thread unless cancelled."""
 
     def __init__(self, payload: dict, callback):
-        super().__init__("Sending Kentucky STAC feedback")
+        super().__init__("Sending STAC feedback")
         self._payload = payload
         self._callback = callback
         self.error: Optional[str] = None
@@ -99,7 +99,7 @@ class FeedbackDialog(QDialog):
         self.setMinimumWidth(420)
         self._task: Optional[SendFeedbackTask] = None
 
-        heading = QLabel("<b>Have a bug, an idea, or a question about Kentucky STAC?</b>")
+        heading = QLabel("<b>Have a bug, an idea, or a question about STAC?</b>")
         heading.setWordWrap(True)
 
         # ---- choice panel
@@ -199,7 +199,7 @@ class FeedbackDialog(QDialog):
     def _open_github(self):
         if not QDesktopServices.openUrl(QUrl.fromEncoded(github_issue_url(current_environment()).encode("ascii"))):
             QMessageBox.warning(
-                self, "Kentucky STAC", f"Couldn't open the browser.\n\nYou can file an issue directly at {REPO_URL}/issues."
+                self, "STAC", f"Couldn't open the browser.\n\nYou can file an issue directly at {REPO_URL}/issues."
             )
             return
         self.accept()

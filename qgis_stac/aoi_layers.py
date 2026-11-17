@@ -16,7 +16,7 @@ from qgis.core import (
     QgsVectorLayer,
 )
 
-KIND_PROPERTY = "kentucky_stac/aoi_kind"
+KIND_PROPERTY = "qgis_stac/aoi_kind"
 
 # geometry type -> (layer name suffix, memory provider geometry string)
 _KINDS = {
@@ -35,7 +35,7 @@ def _find_layer(project: QgsProject, kind: str) -> Optional[QgsVectorLayer]:
 
 def _create_layer(project: QgsProject, geometry_type, crs: QgsCoordinateReferenceSystem) -> QgsVectorLayer:
     kind, provider_geometry = _KINDS[geometry_type]
-    layer = QgsVectorLayer(f"{provider_geometry}?field=label:string", f"Ky STAC AOI ({kind})", "memory")
+    layer = QgsVectorLayer(f"{provider_geometry}?field=label:string", f"STAC AOI ({kind})", "memory")
     layer.setCrs(crs)
     layer.setCustomProperty(KIND_PROPERTY, kind)
     if geometry_type == Qgis.GeometryType.Polygon:
