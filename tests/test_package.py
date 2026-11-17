@@ -28,7 +28,8 @@ def test_zip_entries_are_plain_data_files_with_unix_line_endings(tmp_path):
         for info in archive.infolist():
             assert info.create_system == 3, info.filename
             assert info.external_attr >> 16 == 0o100644, (info.filename, oct(info.external_attr >> 16))
-            assert b"\r\n" not in archive.read(info), info.filename
+            if not info.filename.endswith(".png"):  # a PNG's own signature contains \r\n
+                assert b"\r\n" not in archive.read(info), info.filename
 
 
 def test_release_notes_are_the_current_versions_entry():

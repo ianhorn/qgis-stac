@@ -11,6 +11,6 @@ tracker=https://github.com/ianhorn/qgis-stac/issues
 repository=https://github.com/ianhorn/qgis-stac
 homepage=https://ianhorn.github.io/qgis-stac/
 license=GPL-2.0-or-later
-icon=icon.svg
+icon=icon.png
 tags=stac,lidar,copc,imagery,dem
 changelog=0.1.0 - First release of the generic STAC plugin: Microsoft Planetary Computer is the built-in catalog and any other STAC API can be added from STAC Index or by URL. Search an area of interest, stream or download tiles, build mosaics and virtual point clouds, and export a notebook, Python, R or shell script.

@@ -31,7 +31,7 @@ class StacPlugin:
         self.iface.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, self.dock)
         self.dock.hide()
 
-        icon = QIcon(os.path.join(os.path.dirname(__file__), "icon.svg"))
+        icon = QIcon(os.path.join(os.path.dirname(__file__), "icon.png"))
         self.action = QAction(icon, PLUGIN_NAME, self.iface.mainWindow())
         self.action.setCheckable(True)
         self.action.toggled.connect(self.dock.setVisible)
