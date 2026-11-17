@@ -61,9 +61,10 @@ def test_parse_stac_index_lists_default_first_then_a_to_z_with_kyfromabove_in_pl
     entries = parse_stac_index(data)
     assert entries[0] == BUILTIN_ENTRY
     # The index's own Planetary Computer entry is the default, listed once at the top.
-    titles = [e.title for e in entries[1:]]
+    titles = [e.title for e in entries[1:] if e not in _FIXED]
     assert titles == sorted(titles, key=str.casefold)
-    assert "Alpha API" in titles and "Zeta API" in titles and "KyFromAbove" in titles
+    assert entries[1 : 1 + len(_FIXED)] == fallback_entries()[1:]  # presets come first, above the index entries
+    assert titles == ["Alpha API", "Zeta API"] and KYFROMABOVE_ENTRY in entries
     # The index's own Earth Search entry is the preset's URL, so it's listed once, under the preset's title.
     assert [e.url for e in entries].count(OTHER) == 1 and "Earth Search" not in titles
 

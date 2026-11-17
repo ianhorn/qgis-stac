@@ -202,7 +202,11 @@ class SourcesDialog(QDialog):
             self.catalog_combo.setToolTip("Couldn't reach STAC Index -- only the built-in catalogs are listed. "
                                           "You can still type a URL.")
         self.catalog_combo.addItem("Select a catalog...", None)
+        was_preset = True
         for e in entries:
+            if was_preset and not (e.is_builtin or e.is_preset):
+                self.catalog_combo.insertSeparator(self.catalog_combo.count())  # presets above, STAC Index below
+            was_preset = e.is_builtin or e.is_preset
             self.catalog_combo.addItem(e.title, e)
             self.catalog_combo.setItemData(self.catalog_combo.count() - 1, e.detail, Qt.ItemDataRole.ToolTipRole)
         self.catalog_combo.setEnabled(True)

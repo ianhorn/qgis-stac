@@ -83,6 +83,7 @@ class CatalogEntry:
     url: str
     detail: str
     is_builtin: bool = False
+    is_preset: bool = False  # built-in presets are listed first, above the STAC Index entries
 
 
 BUILTIN_ENTRY = CatalogEntry(
@@ -100,11 +101,12 @@ KYFROMABOVE_ENTRY = CatalogEntry(
     KYFROMABOVE_BASE_URI,
     f"{KYFROMABOVE_BASE_URI}\n\nKentucky Aerial Photography and Elevation Data (KYAPED), 2010 - present: "
     "leaf-off orthoimagery, LiDAR point clouds, and LiDAR-derived DEMs.",
+    is_preset=True,
 )
 
 
 def _preset(title: str, url: str, summary: str) -> CatalogEntry:
-    return CatalogEntry(title, title, url, f"{url}\n\n{summary}")
+    return CatalogEntry(title, title, url, f"{url}\n\n{summary}", is_preset=True)
 
 
 # Well-known public STAC APIs, always offered (so they work even when STAC Index can't be reached). Only
@@ -136,9 +138,13 @@ def _known_urls() -> set:
     return {normalize_url(e.url).lower() for e in PRESET_ENTRIES} | {normalize_url(KYFROMABOVE_BASE_URI).lower()}
 
 
+def _presets_sorted() -> List[CatalogEntry]:
+    return sorted(list(PRESET_ENTRIES) + [KYFROMABOVE_ENTRY], key=lambda e: e.title.casefold())
+
+
 def fallback_entries() -> List[CatalogEntry]:
     """What the catalog picker offers when STAC Index can't be reached."""
-    return [BUILTIN_ENTRY] + sorted(list(PRESET_ENTRIES) + [KYFROMABOVE_ENTRY], key=lambda e: e.title.casefold())
+    return [BUILTIN_ENTRY] + _presets_sorted()
 
 
 def parse_stac_index(data: Any) -> List[CatalogEntry]:
@@ -166,10 +172,8 @@ def parse_stac_index(data: Any) -> List[CatalogEntry]:
             summary = summary[:_SUMMARY_MAX].rstrip() + "..."
         detail = f"{url}\n\n{summary}" if summary else url
         entries.append(CatalogEntry(title, title, base, detail))
-    entries.extend(PRESET_ENTRIES)
-    entries.append(KYFROMABOVE_ENTRY)
     entries.sort(key=lambda e: e.title.casefold())
-    return [BUILTIN_ENTRY] + entries
+    return [BUILTIN_ENTRY] + _presets_sorted() + entries
 
 
 def serialize_sources(sources: Iterable[ApiSource]) -> str:
