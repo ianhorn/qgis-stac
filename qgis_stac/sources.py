@@ -103,6 +103,44 @@ KYFROMABOVE_ENTRY = CatalogEntry(
 )
 
 
+def _preset(title: str, url: str, summary: str) -> CatalogEntry:
+    return CatalogEntry(title, title, url, f"{url}\n\n{summary}")
+
+
+# Well-known public STAC APIs, always offered (so they work even when STAC Index can't be reached). Only
+# APIs whose /collections and /search work anonymously are listed; static catalogs and APIs that need a
+# login to search are left to STAC Index or a typed-in URL.
+PRESET_ENTRIES = (
+    _preset("Earth Search (Element 84)", "https://earth-search.aws.element84.com/v1",
+            "Sentinel-2, Landsat, NAIP and Copernicus DEM on AWS. Some collections are requester-pays."),
+    _preset("Copernicus Data Space", "https://stac.dataspace.copernicus.eu/v1",
+            "Copernicus Sentinel missions. Searching is anonymous; downloading files needs a free account's S3 keys."),
+    _preset("Digital Earth Australia", "https://explorer.sandbox.dea.ga.gov.au/stac",
+            "Geoscience Australia analysis-ready Landsat and Sentinel data, water observations and more."),
+    _preset("INPE Brazil Data Cube", "https://data.inpe.br/bdc/stac/v1",
+            "Brazilian satellite data cubes (Landsat, Sentinel, CBERS)."),
+    _preset("OpenAerialMap", "https://api.imagery.hotosm.org/stac",
+            "Openly licensed community and humanitarian aerial imagery."),
+    _preset("Earth Genome Sentinel-2 mosaics", "https://stac.earthgenome.org",
+            "Cloud-free Sentinel-2 mosaics."),
+    _preset("USGS Astrogeology", "https://stac.astrogeology.usgs.gov/api",
+            "Planetary data for the Moon, Mars and other bodies."),
+    _preset("HUB Ocean - Ocean Data Platform", "https://api.hubocean.earth/api/stac",
+            "Ocean datasets from the HUB Ocean Data Platform."),
+    _preset("JAXA Earth API", "https://data.earth.jaxa.jp/app/stac/v2",
+            "JAXA Earth observation datasets."),
+)
+
+
+def _known_urls() -> set:
+    return {normalize_url(e.url).lower() for e in PRESET_ENTRIES} | {normalize_url(KYFROMABOVE_BASE_URI).lower()}
+
+
+def fallback_entries() -> List[CatalogEntry]:
+    """What the catalog picker offers when STAC Index can't be reached."""
+    return [BUILTIN_ENTRY] + sorted(list(PRESET_ENTRIES) + [KYFROMABOVE_ENTRY], key=lambda e: e.title.casefold())
+
+
 def parse_stac_index(data: Any) -> List[CatalogEntry]:
     """Public, searchable STAC APIs from a STAC Index /api/catalogs response: the default Microsoft
     Planetary Computer entry always first (so it's the way back after switching APIs, even if STAC
@@ -110,6 +148,7 @@ def parse_stac_index(data: Any) -> List[CatalogEntry]:
     added in its place if STAC Index doesn't list it. Private/protected catalogs are left out: there's
     no way to supply credentials."""
     entries: List[CatalogEntry] = []
+    known = _known_urls()
     for el in data if isinstance(data, list) else []:
         if not isinstance(el, dict):
             continue
@@ -120,13 +159,14 @@ def parse_stac_index(data: Any) -> List[CatalogEntry]:
         if not title or not is_usable_base_url(url):
             continue
         base = normalize_url(url)
-        if is_default_uri(base) or base.lower() == normalize_url(KYFROMABOVE_BASE_URI).lower():
-            continue  # BUILTIN_ENTRY / KYFROMABOVE_ENTRY cover them
+        if is_default_uri(base) or base.lower() in known:
+            continue  # BUILTIN_ENTRY / PRESET_ENTRIES / KYFROMABOVE_ENTRY cover them
         summary = (el.get("summary") or "").strip()
         if len(summary) > _SUMMARY_MAX:
             summary = summary[:_SUMMARY_MAX].rstrip() + "..."
         detail = f"{url}\n\n{summary}" if summary else url
         entries.append(CatalogEntry(title, title, base, detail))
+    entries.extend(PRESET_ENTRIES)
     entries.append(KYFROMABOVE_ENTRY)
     entries.sort(key=lambda e: e.title.casefold())
     return [BUILTIN_ENTRY] + entries

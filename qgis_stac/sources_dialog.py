@@ -24,11 +24,10 @@ from qgis.PyQt.QtWidgets import (
 )
 
 from .sources import (
-    BUILTIN_ENTRY,
-    KYFROMABOVE_ENTRY,
     ApiSource,
     CatalogEntry,
     add_source,
+    fallback_entries,
     is_default_uri,
     is_valid_api_url,
     normalize_url,
@@ -198,9 +197,9 @@ class SourcesDialog(QDialog):
         self._task = None
         self.catalog_combo.clear()
         if error or not entries:
-            # Still offer the default catalog (and KyFromAbove), so there's always a way back to the default.
-            entries = [BUILTIN_ENTRY, KYFROMABOVE_ENTRY]
-            self.catalog_combo.setToolTip("Couldn't reach STAC Index -- only the default and KyFromAbove are listed. "
+            # Still offer the default catalog and the built-in presets, so there's always a way back to the default.
+            entries = fallback_entries()
+            self.catalog_combo.setToolTip("Couldn't reach STAC Index -- only the built-in catalogs are listed. "
                                           "You can still type a URL.")
         self.catalog_combo.addItem("Select a catalog...", None)
         for e in entries:

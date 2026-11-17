@@ -5,9 +5,11 @@ from qgis_stac.sources import (
     DEFAULT_SOURCE,
     KYFROMABOVE_BASE_URI,
     KYFROMABOVE_ENTRY,
+    PRESET_ENTRIES,
     ApiSource,
     add_source,
     deserialize_sources,
+    fallback_entries,
     is_default_uri,
     is_usable_base_url,
     is_valid_api_url,
@@ -18,6 +20,7 @@ from qgis_stac.sources import (
 from qgis_stac.stac import Collection, Item
 
 OTHER = "https://earth-search.aws.element84.com/v1"
+_FIXED = set(PRESET_ENTRIES) | {KYFROMABOVE_ENTRY}
 
 
 def _entry(title, url, **kw):
@@ -42,9 +45,10 @@ def test_parse_stac_index_filters_like_the_addin():
     ]
     entries = parse_stac_index(data)
     assert entries[0] == BUILTIN_ENTRY
-    assert [e.title for e in entries[1:]] == ["Alpha API", "KyFromAbove", "Zeta API"]
-    assert entries[3].url == "https://zeta.example/stac"  # trailing slash trimmed
-    assert entries[1].detail.endswith("...")  # long summary truncated
+    assert [e.title for e in entries[1:] if e not in _FIXED] == ["Alpha API", "Zeta API"]
+    by_title = {e.title: e for e in entries}
+    assert by_title["Zeta API"].url == "https://zeta.example/stac"  # trailing slash trimmed
+    assert by_title["Alpha API"].detail.endswith("...")  # long summary truncated
 
 
 def test_parse_stac_index_lists_default_first_then_a_to_z_with_kyfromabove_in_place():
@@ -57,18 +61,29 @@ def test_parse_stac_index_lists_default_first_then_a_to_z_with_kyfromabove_in_pl
     entries = parse_stac_index(data)
     assert entries[0] == BUILTIN_ENTRY
     # The index's own Planetary Computer entry is the default, listed once at the top.
-    assert [e.title for e in entries[1:]] == ["Alpha API", "Earth Search", "KyFromAbove", "Zeta API"]
-    assert entries[2].url == OTHER
+    titles = [e.title for e in entries[1:]]
+    assert titles == sorted(titles, key=str.casefold)
+    assert "Alpha API" in titles and "Zeta API" in titles and "KyFromAbove" in titles
+    # The index's own Earth Search entry is the preset's URL, so it's listed once, under the preset's title.
+    assert [e.url for e in entries].count(OTHER) == 1 and "Earth Search" not in titles
 
 
 def test_parse_stac_index_lists_default_then_a_to_z():
     entries = parse_stac_index([_entry("Zeta API", "https://zeta.example/stac"), _entry("Alpha API", "https://alpha.example/v1")])
-    assert [e.title for e in entries[1:]] == ["Alpha API", "KyFromAbove", "Zeta API"]
+    assert [e.title for e in entries[1:] if e not in _FIXED] == ["Alpha API", "Zeta API"]
 
 
-def test_parse_stac_index_on_bad_data_still_offers_default_and_kentucky():
-    assert parse_stac_index(None) == [BUILTIN_ENTRY, KYFROMABOVE_ENTRY]
-    assert parse_stac_index({"not": "a list"}) == [BUILTIN_ENTRY, KYFROMABOVE_ENTRY]
+def test_parse_stac_index_on_bad_data_still_offers_default_and_presets():
+    assert parse_stac_index(None) == fallback_entries()
+    assert parse_stac_index({"not": "a list"}) == fallback_entries()
+    assert fallback_entries()[0] == BUILTIN_ENTRY
+    assert set(fallback_entries()[1:]) == set(PRESET_ENTRIES) | {KYFROMABOVE_ENTRY}
+
+
+def test_preset_urls_are_usable_and_unique():
+    urls = [e.url.lower() for e in PRESET_ENTRIES]
+    assert len(urls) == len(set(urls))
+    assert all(is_usable_base_url(u) and not is_default_uri(u) for u in urls)
 
 
 def test_url_checks():
