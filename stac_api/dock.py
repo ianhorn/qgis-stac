@@ -24,7 +24,7 @@ from .stac import Collection
 from .tasks import CollectionsTask
 from .theme import checkbox_style
 
-SOURCES_SETTINGS_KEY = "qgis_stac/api_sources"
+SOURCES_SETTINGS_KEY = "stac_api/api_sources"
 
 
 class StacDock(QDockWidget):

@@ -1,5 +1,5 @@
-from qgis_stac.catalog import is_lidar_collection, item_crs, split_collections, thumbnail_href
-from qgis_stac.sources import (
+from stac_api.catalog import is_lidar_collection, item_crs, split_collections, thumbnail_href
+from stac_api.sources import (
     BUILTIN_ENTRY,
     DEFAULT_BASE_URI,
     DEFAULT_SOURCE,
@@ -17,7 +17,7 @@ from qgis_stac.sources import (
     serialize_sources,
     source_name,
 )
-from qgis_stac.stac import Collection, Item
+from stac_api.stac import Collection, Item
 
 OTHER = "https://earth-search.aws.element84.com/v1"
 _FIXED = set(PRESET_ENTRIES) | {KYFROMABOVE_ENTRY}
@@ -169,7 +169,7 @@ def test_data_asset_key():
 
 
 def test_item_json_text_and_html():
-    from qgis_stac.item_json import item_json_text, json_to_html
+    from stac_api.item_json import item_json_text, json_to_html
 
     raw = {"id": "t1", "properties": {"note": "a <b> & c"}, "assets": {"data": {"href": "https://x.example/a.tif?sig=1&b=2"}}}
     item = Item.from_dict(raw)
@@ -182,7 +182,7 @@ def test_item_json_text_and_html():
 
 
 def test_auth_cfg_is_saved_cleaned_and_looked_up():
-    from qgis_stac.sources import (
+    from stac_api.sources import (
         ApiSource,
         auth_cfg_for,
         deserialize_sources,

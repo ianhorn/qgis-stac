@@ -56,7 +56,7 @@ def ensure_ca_bundle() -> Optional[str]:
     if not certificates:
         return None
 
-    directory = os.path.join(QgsApplication.qgisSettingsDirPath() or tempfile.gettempdir(), "qgis_stac")
+    directory = os.path.join(QgsApplication.qgisSettingsDirPath() or tempfile.gettempdir(), "stac_api")
     os.makedirs(directory, exist_ok=True)
     path = os.path.join(directory, "ca-bundle.pem")
     tmp = path + ".tmp"

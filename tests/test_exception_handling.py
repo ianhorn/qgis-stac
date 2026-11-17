@@ -5,8 +5,8 @@ import pytest
 
 pytest.importorskip("qgis.core", reason="needs QGIS (qgis.core)")
 
-from qgis_stac import diagnostics, signing  # noqa: E402
-from qgis_stac.stac import StacError  # noqa: E402
+from stac_api import diagnostics, signing  # noqa: E402
+from stac_api.stac import StacError  # noqa: E402
 
 
 @pytest.fixture(autouse=True)

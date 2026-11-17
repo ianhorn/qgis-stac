@@ -16,7 +16,7 @@ from qgis.core import (
     QgsVectorLayer,
 )
 
-KIND_PROPERTY = "qgis_stac/aoi_kind"
+KIND_PROPERTY = "stac_api/aoi_kind"
 
 # geometry type -> (layer name suffix, memory provider geometry string)
 _KINDS = {

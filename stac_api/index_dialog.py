@@ -20,7 +20,7 @@ from qgis.PyQt.QtWidgets import (
 
 from .bands import FUNCTIONS, INDICES, check_formula
 
-_KEY = "qgis_stac/custom_indices"
+_KEY = "stac_api/custom_indices"
 
 
 def saved_formulas() -> Dict[str, str]:

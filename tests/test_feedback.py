@@ -1,6 +1,6 @@
 from urllib.parse import parse_qs, urlparse
 
-from qgis_stac.feedback import (
+from stac_api.feedback import (
     REPO_URL,
     SUBJECT,
     direct_payload,

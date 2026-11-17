@@ -182,7 +182,7 @@ class ItemJsonHover(QObject):
         self._card.browser.viewport().installEventFilter(self)
         self._card.browser.anchorClicked.connect(self._on_link)
         self._card.pin_toggled.connect(self._on_pin)
-        self._card.set_view("html" if str(QgsSettings().value("qgis_stac/card_view", "json")) == "html" else "json")
+        self._card.set_view("html" if str(QgsSettings().value("stac_api/card_view", "json")) == "html" else "json")
         self._card.view_changed.connect(self._on_view)
         self._card.close_requested.connect(lambda: self.hide_now(force=True))
         self._pinned = False
@@ -214,7 +214,7 @@ class ItemJsonHover(QObject):
 
     def _on_view(self, mode: str) -> None:
         """JSON or HTML was chosen: remember it and redraw the open card (keeping its size once pinned)."""
-        QgsSettings().setValue("qgis_stac/card_view", mode)
+        QgsSettings().setValue("stac_api/card_view", mode)
         if self._open_row is not None:
             html = self._html_for_row(self._open_row, mode)
             if html:

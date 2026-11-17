@@ -1,7 +1,7 @@
 # STAC
 
 [![CI](https://github.com/ianhorn/qgis-stac/actions/workflows/ci.yml/badge.svg)](https://github.com/ianhorn/qgis-stac/actions/workflows/ci.yml)
-[![QGIS plugin](https://img.shields.io/badge/QGIS-plugin-589632)](https://plugins.qgis.org/plugins/qgis_stac/)
+[![QGIS plugin](https://img.shields.io/badge/QGIS-plugin-589632)](https://plugins.qgis.org/plugins/stac_api/)
 [![License: GPL v2+](https://img.shields.io/badge/license-GPL--2.0--or--later-blue)](LICENSE)
 
 A QGIS plugin for searching, streaming and downloading imagery, elevation and LiDAR from STAC APIs. Microsoft Planetary Computer is the default catalog; Earth Search and many others are one pick away in STAC Index.
@@ -43,7 +43,7 @@ covers every tool, filter and known issue in detail.
 2. Click **Install Plugin**.
 3. Open it from **Plugins → STAC** (or the toolbar icon).
 
-It is also listed at <https://plugins.qgis.org/plugins/qgis_stac/>, where each version's zip can be
+It is also listed at <https://plugins.qgis.org/plugins/stac_api/>, where each version's zip can be
 used with **Install from ZIP**.
 
 ## Quick start
@@ -64,10 +64,10 @@ used with **Install from ZIP**.
 
 ## Development
 
-The plugin is the `qgis_stac/` folder. It is deliberately stdlib-only: runtime dependencies come from
+The plugin is the `stac_api/` folder. It is deliberately stdlib-only: runtime dependencies come from
 QGIS's own Python.
 
-**Live testing.** Symlink (or junction, on Windows) `qgis_stac/` into a QGIS profile's
+**Live testing.** Symlink (or junction, on Windows) `stac_api/` into a QGIS profile's
 `python/plugins` directory, enable it, and use the
 [Plugin Reloader](https://plugins.qgis.org/plugins/plugin_reloader/) plugin to pick up code changes. Don't
 use *Uninstall* or *Install from ZIP* on a linked folder; they would delete your working copy.
@@ -91,13 +91,13 @@ traceback reaches QGIS's Log Messages panel. Ruff enforces this.
 
 ## Releasing
 
-1. Bump `version` in **both** `qgis_stac/metadata.txt` and `pyproject.toml`, and add the new entry at
+1. Bump `version` in **both** `stac_api/metadata.txt` and `pyproject.toml`, and add the new entry at
    the top of `changelog` in `metadata.txt`. A test fails if these drift apart.
 2. Run through [`QA_CHECKLIST.md`](QA_CHECKLIST.md) in QGIS (CI can't click through the live catalog), merge to `main` once CI is green, then tag and push: `git tag vX.Y.Z && git push origin vX.Y.Z`.
 3. The **Release** workflow checks the tag matches `metadata.txt`, re-runs lint and tests, builds
-   `qgis_stac-X.Y.Z.zip`, and attaches it to a GitHub release with the changelog entry as its notes
+   `stac_api-X.Y.Z.zip`, and attaches it to a GitHub release with the changelog entry as its notes
    (marked pre-release only if `metadata.txt` has `experimental=True`).
-4. Upload that zip at <https://plugins.qgis.org/plugins/qgis_stac/> via **Manage**. This step is manual
+4. Upload that zip at <https://plugins.qgis.org/plugins/stac_api/> via **Manage**. This step is manual
    because it needs your OSGeo login. The plugin has been stable since 0.2.0; add `experimental=True` to
    `metadata.txt` only for a release that should be hidden from default installs.
 

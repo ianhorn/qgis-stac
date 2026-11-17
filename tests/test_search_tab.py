@@ -19,10 +19,10 @@ from qgis.core import (  # noqa: E402
     QgsProject,
 )
 
-from qgis_stac import auth, search_tab  # noqa: E402
-from qgis_stac.aoi import AoiState  # noqa: E402
-from qgis_stac.sources import DEFAULT_SOURCE, ApiSource  # noqa: E402
-from qgis_stac.stac import Asset, Collection, Item  # noqa: E402
+from stac_api import auth, search_tab  # noqa: E402
+from stac_api.aoi import AoiState  # noqa: E402
+from stac_api.sources import DEFAULT_SOURCE, ApiSource  # noqa: E402
+from stac_api.stac import Asset, Collection, Item  # noqa: E402
 
 OTHER = ApiSource("Other API", "https://other.example/stac")
 POLYGON = "POLYGON((-85 37, -84 37, -84 38, -85 38, -85 37))"

@@ -1,4 +1,4 @@
-from qgis_stac import s3
+from stac_api import s3
 
 
 def test_parse_and_is_s3():

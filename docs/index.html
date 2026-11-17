@@ -285,15 +285,15 @@
     <h3>Install the plugin</h3>
     <p><strong>From the QGIS plugin repository (recommended).</strong> Open <strong>Plugins &rarr; Manage and Install Plugins</strong> and search for
       <strong>STAC</strong> under <strong>All</strong>, then click <strong>Install Plugin</strong>. It is also at
-      <a href="https://plugins.qgis.org/plugins/qgis_stac/" target="_blank" rel="noopener">plugins.qgis.org/plugins/qgis_stac</a>, and each
+      <a href="https://plugins.qgis.org/plugins/stac_api/" target="_blank" rel="noopener">plugins.qgis.org/plugins/stac_api</a>, and each
       version&rsquo;s zip is on the <a href="https://github.com/ianhorn/qgis-stac/releases" target="_blank" rel="noopener">GitHub Releases</a> page
       (<strong>Install from ZIP</strong> works with it too).</p>
     <p><strong>From source, for development.</strong> The source is on GitHub at
       <a href="https://github.com/ianhorn/qgis-stac" target="_blank" rel="noopener">ianhorn/qgis-stac</a>
-      (<code>git clone https://github.com/ianhorn/qgis-stac.git</code>); the plugin is the <code>qgis_stac/</code> folder.</p>
-    <p>Copy (or symlink/junction) the <code>qgis_stac/</code> folder into your QGIS
+      (<code>git clone https://github.com/ianhorn/qgis-stac.git</code>); the plugin is the <code>stac_api/</code> folder.</p>
+    <p>Copy (or symlink/junction) the <code>stac_api/</code> folder into your QGIS
       profile's plugin directory:</p>
-    <pre><code>%APPDATA%\QGIS\QGIS3\profiles\default\python\plugins\qgis_stac</code></pre>
+    <pre><code>%APPDATA%\QGIS\QGIS3\profiles\default\python\plugins\stac_api</code></pre>
     <p>Either way, enable it under <strong>Plugins &rarr; Manage and Install Plugins &rarr; Installed</strong> and open
       it from <strong>Plugins &rarr; STAC</strong> (or the toolbar icon). A junction to your working copy means
       <em>Uninstall</em> or <em>Install from ZIP</em> in the Plugin Manager would delete the working copy, so don&rsquo;t use those while developing. The
@@ -550,7 +550,7 @@
         reflectance scale and offset (<code>raster:bands</code>), they are applied first, which matters for ratios. Sentinel-2&rsquo;s &minus;0.1 offset can push the
         index of very dark pixels slightly beyond the &minus;1 to 1 range.</li>
       <li><strong>Band combinations</strong> are a small VRT file that lists the three remote bands. It is kept in your QGIS settings folder under
-        <code>qgis_stac/vrt</code>, so a saved project keeps working.</li>
+        <code>stac_api/vrt</code>, so a saved project keeps working.</li>
       <li>Opening the remote files takes a few seconds, so the layer appears shortly after you choose it. Adding the same layer twice is skipped.</li>
     </ul>
   </section>

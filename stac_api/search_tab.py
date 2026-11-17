@@ -413,14 +413,14 @@ class SearchTab(QWidget):
         self.concurrency_spin = QSpinBox()
         self.concurrency_spin.setRange(MIN_DOWNLOAD_CONCURRENCY, MAX_DOWNLOAD_CONCURRENCY)
         self.concurrency_spin.setValue(
-            int(QgsSettings().value("qgis_stac/download_concurrency", default_concurrency()))
+            int(QgsSettings().value("stac_api/download_concurrency", default_concurrency()))
         )
         self.concurrency_spin.setToolTip(
             "How many files download at the same time. Higher can be faster, but may get throttled "
             "by the server or saturate your connection."
         )
         self.concurrency_spin.valueChanged.connect(
-            lambda value: QgsSettings().setValue("qgis_stac/download_concurrency", value)
+            lambda value: QgsSettings().setValue("stac_api/download_concurrency", value)
         )
         # Crops to the AOI's actual shape rather than the tiles' full rectangular extent -- a GDAL
         # warp cutline for a raster mosaic, PDAL filters.crop (see pdal_clip.py) for downloaded point
@@ -935,11 +935,11 @@ class SearchTab(QWidget):
             self._warn("Wait for the current task to finish first.")
             return
         settings = QgsSettings()
-        start = os.path.join(str(settings.value("qgis_stac/download_dir", "") or ""), filename_from_href(href))
+        start = os.path.join(str(settings.value("stac_api/download_dir", "") or ""), filename_from_href(href))
         path, _ = QFileDialog.getSaveFileName(self, f"Save asset '{key}' of {item.id}", start)
         if not path:
             return
-        settings.setValue("qgis_stac/download_dir", os.path.dirname(path))
+        settings.setValue("stac_api/download_dir", os.path.dirname(path))
         try:
             if os.path.exists(path):
                 os.remove(path)  # the save dialog already asked about overwriting
@@ -1180,11 +1180,11 @@ class SearchTab(QWidget):
             return
         settings = QgsSettings()
         folder = QFileDialog.getExistingDirectory(
-            self, "Download and filter tiles in", str(settings.value("qgis_stac/download_dir", "") or "")
+            self, "Download and filter tiles in", str(settings.value("stac_api/download_dir", "") or "")
         )
         if not folder:
             return
-        settings.setValue("qgis_stac/download_dir", folder)
+        settings.setValue("stac_api/download_dir", folder)
         self._vpc_options = VpcOptions()
         self._download_filter = point_filter
         self._force_add_when_done = True
@@ -1215,13 +1215,13 @@ class SearchTab(QWidget):
         options = VpcOptions()
         settings = QgsSettings()
         folder = QFileDialog.getExistingDirectory(
-            self, "Save the virtual point cloud (.vpc) to", str(settings.value("qgis_stac/vpc_dir", "") or "")
+            self, "Save the virtual point cloud (.vpc) to", str(settings.value("stac_api/vpc_dir", "") or "")
         )
         if not folder:
             return
-        settings.setValue("qgis_stac/vpc_dir", folder)
+        settings.setValue("stac_api/vpc_dir", folder)
 
-        vpc_path = os.path.join(folder, f"qgis_stac_pointcloud_{datetime.now().strftime('%H%M%S')}.vpc")
+        vpc_path = os.path.join(folder, f"stac_api_pointcloud_{datetime.now().strftime('%H%M%S')}.vpc")
         notes = [f"streamed directly (no download), saved to {os.path.basename(vpc_path)}"]
         if skipped:
             notes.append(f"{skipped} tile{'s' if skipped != 1 else ''} plain LAZ/LAS, which QGIS can't stream; left out")
@@ -1266,11 +1266,11 @@ class SearchTab(QWidget):
             return
         settings = QgsSettings()
         folder = QFileDialog.getExistingDirectory(
-            self, "Save the mosaic (.vrt) to", str(settings.value("qgis_stac/mosaic_dir", "") or "")
+            self, "Save the mosaic (.vrt) to", str(settings.value("stac_api/mosaic_dir", "") or "")
         )
         if not folder:
             return
-        settings.setValue("qgis_stac/mosaic_dir", folder)
+        settings.setValue("stac_api/mosaic_dir", folder)
         self.start_mosaic(items, folder)
 
     def start_mosaic(self, items: List[Item], folder: str):
@@ -1330,11 +1330,11 @@ class SearchTab(QWidget):
         kind = chosen.data()
         _label, ext, file_filter = scripts.KINDS[kind]
         settings = QgsSettings()
-        start = os.path.join(str(settings.value("qgis_stac/script_dir", "") or ""), "download_tiles" + ext)
+        start = os.path.join(str(settings.value("stac_api/script_dir", "") or ""), "download_tiles" + ext)
         path, _ = QFileDialog.getSaveFileName(self, "Save the script", start, file_filter)
         if not path:
             return
-        settings.setValue("qgis_stac/script_dir", os.path.dirname(path))
+        settings.setValue("stac_api/script_dir", os.path.dirname(path))
         entries = scripts.entries_for((os.path.basename(j.dest), j.url) for j in jobs)
         try:
             with open(path, "w", encoding="utf-8", newline="\n") as f:
@@ -1361,11 +1361,11 @@ class SearchTab(QWidget):
             return
         settings = QgsSettings()
         folder = QFileDialog.getExistingDirectory(
-            self, "Save the MosaicJSON to", str(settings.value("qgis_stac/mosaicjson_dir", "") or "")
+            self, "Save the MosaicJSON to", str(settings.value("stac_api/mosaicjson_dir", "") or "")
         )
         if not folder:
             return
-        settings.setValue("qgis_stac/mosaicjson_dir", folder)
+        settings.setValue("stac_api/mosaicjson_dir", folder)
 
         specs, left_out = plan_mosaicjson(items, folder, datetime.now().strftime("%H%M%S"))
         if not specs:
@@ -1415,11 +1415,11 @@ class SearchTab(QWidget):
             self._vpc_options = options
         settings = QgsSettings()
         folder = QFileDialog.getExistingDirectory(
-            self, "Download tiles to", str(settings.value("qgis_stac/download_dir", "") or "")
+            self, "Download tiles to", str(settings.value("stac_api/download_dir", "") or "")
         )
         if not folder:
             return
-        settings.setValue("qgis_stac/download_dir", folder)
+        settings.setValue("stac_api/download_dir", folder)
         self.start_download(items, folder)
 
     def start_download(self, items: List[Item], folder: str):
@@ -1620,7 +1620,7 @@ class SearchTab(QWidget):
                 self._run_add(specs, notes)
             return
         folder = os.path.dirname(paths[0])
-        vpc_path = os.path.join(folder, f"qgis_stac_pointcloud_{datetime.now().strftime('%H%M%S')}.vpc")
+        vpc_path = os.path.join(folder, f"stac_api_pointcloud_{datetime.now().strftime('%H%M%S')}.vpc")
         notes.append(f"combined into one virtual point cloud ({os.path.basename(vpc_path)})")
         self._make_vpc(entries, vpc_path, self._vpc_options, notes)
 

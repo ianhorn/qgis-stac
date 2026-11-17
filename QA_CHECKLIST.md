@@ -3,7 +3,7 @@
 CI covers the logic and the widgets' behaviour, but it can't click through QGIS against the live
 Microsoft Planetary Computer catalog. Run this before a release, especially before dropping `experimental=True`.
 
-**Setup.** Install the build under test (a linked `qgis_stac/` folder, or the release zip via *Install from
+**Setup.** Install the build under test (a linked `stac_api/` folder, or the release zip via *Install from
 ZIP*). Open **View → Panels → Log Messages** and keep the **STAC** tab visible throughout.
 
 **Reading the log.** The plugin writes a warning with a full traceback only when something unexpected fails in a

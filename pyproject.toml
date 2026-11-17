@@ -16,7 +16,7 @@ dev = [
 [tool.ruff]
 line-length = 100
 target-version = "py39"
-extend-exclude = ["qgis_stac/ext_libs"]
+extend-exclude = ["stac_api/ext_libs"]
 
 [tool.ruff.lint]
 # Explicit so a ruff upgrade can't silently widen the ruleset: pyflakes, pycodestyle errors and

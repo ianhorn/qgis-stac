@@ -1,7 +1,7 @@
 import ast
 import json
 
-from qgis_stac import scripts
+from stac_api import scripts
 
 ENTRIES = scripts.entries_for(
     [("a.tif", "s3://bkt/a.tif"), ("b.tif", "https://acct.blob.core.windows.net/box/b.tif"), ("a.tif", "dup")]

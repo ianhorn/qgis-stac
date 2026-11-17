@@ -1,5 +1,5 @@
-from qgis_stac.catalog import is_lidar_collection, split_collections
-from qgis_stac.stac import Collection
+from stac_api.catalog import is_lidar_collection, split_collections
+from stac_api.stac import Collection
 
 
 def test_split_collections_by_kind_and_sorted():
@@ -16,8 +16,8 @@ def test_is_lidar_collection():
 
 
 def test_primary_asset_prefers_copc_for_lidar():
-    from qgis_stac.catalog import primary_asset
-    from qgis_stac.stac import Item
+    from stac_api.catalog import primary_asset
+    from stac_api.stac import Item
 
     item = Item.from_dict(
         {"assets": {"laz": {"href": "a.laz"}, "copc": {"href": "a.copc.laz"}, "thumbnail": {"href": "t.png"}}}
@@ -29,16 +29,16 @@ def test_primary_asset_prefers_copc_for_lidar():
 
 
 def test_primary_asset_for_imagery_is_data_asset():
-    from qgis_stac.catalog import primary_asset
-    from qgis_stac.stac import Item
+    from stac_api.catalog import primary_asset
+    from stac_api.stac import Item
 
     item = Item.from_dict({"assets": {"thumbnail": {"href": "t.png"}, "data": {"href": "d.tif"}}})
     assert primary_asset(item, lidar=False).href == "d.tif"
 
 
 def test_thumbnail_href_prefers_the_items_own_asset():
-    from qgis_stac.catalog import thumbnail_href
-    from qgis_stac.stac import Item
+    from stac_api.catalog import thumbnail_href
+    from stac_api.stac import Item
 
     item = Item.from_dict({"collection": "dem-phase3", "id": "x", "assets": {"thumbnail": {"href": "t.png"}}})
     assert thumbnail_href(item, lidar=False) == "t.png"
@@ -46,7 +46,7 @@ def test_thumbnail_href_prefers_the_items_own_asset():
 
 
 def test_format_size():
-    from qgis_stac.catalog import format_size
+    from stac_api.catalog import format_size
 
     assert format_size(None) == ""
     assert format_size(512) == "512 B"

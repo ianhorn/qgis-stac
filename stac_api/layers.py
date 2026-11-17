@@ -153,8 +153,8 @@ def local_specs(paths: Iterable[str], bboxes: Optional[Dict[str, Optional[Bbox]]
     return specs
 
 
-_EPSG_PROPERTY = "qgis_stac/crs_epsg"  # the raster's horizontal EPSG code, worked out by GDAL on the worker
-_WKT_PROPERTY = "qgis_stac/crs_wkt"  # the CRS's WKT, read on the worker thread while the CRS is still alive
+_EPSG_PROPERTY = "stac_api/crs_epsg"  # the raster's horizontal EPSG code, worked out by GDAL on the worker
+_WKT_PROPERTY = "stac_api/crs_wkt"  # the CRS's WKT, read on the worker thread while the CRS is still alive
 
 
 def _fresh_crs(crs: QgsCoordinateReferenceSystem, wkt: str = "") -> QgsCoordinateReferenceSystem:
