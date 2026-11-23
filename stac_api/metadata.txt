@@ -5,7 +5,7 @@ supportsQt6=True
 qgisMaximumVersion=4.99
 description=Search, load and download imagery, elevation, LiDAR and other data from any STAC API.
 about=A plugin for any STAC (SpatioTemporal Asset Catalog) API. Microsoft Planetary Computer is built in, with presets for Earth Search, Copernicus Data Space, Digital Earth Australia and more; add any other STAC API from STAC Index or by URL. Search an area of interest for imagery, DEM and LiDAR tiles, then add them to the map by streaming COG/COPC files, download them, combine them into GDAL VRT mosaics, MosaicJSON, titiler server mosaics or Virtual Point Clouds, clip them to your area of interest, or export a notebook/Python/R/shell script that downloads them. Requires PDAL (included with QGIS from OSGeo4W) on PATH for LiDAR clipping and virtual point cloud options; everything else uses QGIS's bundled Python, GDAL and network stack.
-version=0.1.3
+version=0.1.4
 author=Ian Horn
 email=ianhorn17@gmail.com
 tracker=https://github.com/ianhorn/qgis-stac/issues
@@ -14,6 +14,7 @@ homepage=https://github.com/ianhorn/qgis-stac
 license=GPL-2.0-or-later
 icon=icon.png
 tags=stac,catalog,api,lidar,copc,imagery,dem
-changelog=0.1.3 - Add to map brings a scene that is a file per band (Landsat, HLS on Planetary Computer) in as a true color composite, not a single gray band (the quality mask or the coastal aerosol band); tiles with a color image of their own are unchanged.
+changelog=0.1.4 - Search filters are kept when the Filters section is collapsed (the cloud cover filter was being dropped on later searches); bilinear resampling only when zoomed in; Copernicus Data Space S3 keys work: the plugin reads Copernicus's own S3 service, and downloads a whole Sentinel-2 product (a .SAFE folder) file by file.
+  0.1.3 - Add to map brings a scene that is a file per band (Landsat, HLS on Planetary Computer) in as a true color composite, not a single gray band (the quality mask or the coastal aerosol band); tiles with a color image of their own are unchanged.
   0.1.1 - An area of interest drawn past the antimeridian is cut there and searched as two parts, so a search over eastern New Zealand no longer returns tiles from the other side of the world; Max cloud cover starts at 10 percent; rasters added to the map are drawn with bilinear resampling (palette rasters keep nearest neighbour); declares QGIS 4 (Qt6) support.
   0.1.0 - First release of the generic STAC plugin: works with any STAC API. Microsoft Planetary Computer is the built-in catalog, with presets for Earth Search, Copernicus Data Space, Digital Earth Australia and others, plus any API from STAC Index or by URL. Search an area of interest, stream or download tiles, build mosaics and virtual point clouds, and export a notebook, Python, R or shell script.
